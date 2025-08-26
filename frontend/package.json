@@ -10,13 +10,8 @@
     "preview": "vite preview",
     "dev:frontend": "vite",
     "dev:backend": "cd ../app && python main.py",
-    "dev:full": "concurrently \"bun run dev:frontend\" \"bun run dev:backend\"",
     "build:prod": "bun run build",
-    "start:prod": "bun run build && cd ../app && python main.py",
     "setup": "bun install && bun run build",
-    "docker:build": "cd .. && docker build -t doku-modern .",
-    "docker:run": "docker run -d -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/hostroot:ro -p 9090:9090 doku-modern",
-    "docker:dev": "cd .. && docker-compose -f docker-compose.dev.yml up",
     "clean": "rm -rf dist node_modules/.vite",
     "typecheck": "tsc --noEmit"
   },

@@ -96,6 +96,87 @@ const mockImages: ImageInfo[] = [
     size: 280_000_000,
     virtual_size: 280_000_000,
     containers: 1
+  },
+  {
+    id: "sha256:def456ghi789",
+    repository: "node",
+    tag: "18-alpine",
+    created: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 850_000_000,
+    virtual_size: 850_000_000,
+    containers: 2
+  },
+  {
+    id: "sha256:jkl012mno345",
+    repository: "python",
+    tag: "3.11-slim",
+    created: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 650_000_000,
+    virtual_size: 650_000_000,
+    containers: 0
+  },
+  {
+    id: "sha256:pqr678stu901",
+    repository: "mongo",
+    tag: "6.0",
+    created: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 2_100_000_000,
+    virtual_size: 2_100_000_000,
+    containers: 1
+  },
+  {
+    id: "sha256:vwx234yzz567",
+    repository: "alpine",
+    tag: "3.18",
+    created: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 45_000_000,
+    virtual_size: 45_000_000,
+    containers: 3
+  },
+  {
+    id: "sha256:abc890def123",
+    repository: "ubuntu",
+    tag: "22.04",
+    created: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 280_000_000,
+    virtual_size: 280_000_000,
+    containers: 0
+  },
+  {
+    id: "sha256:ghi456jkl789",
+    repository: "traefik",
+    tag: "v3.0",
+    created: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 410_000_000,
+    virtual_size: 410_000_000,
+    containers: 1
+  },
+  {
+    id: "sha256:mno012pqr345",
+    repository: "mysql",
+    tag: "8.0",
+    created: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 1_850_000_000,
+    virtual_size: 1_850_000_000,
+    containers: 0
+  },
+  {
+    id: "sha256:stu678vwx901",
+    repository: "elasticsearch",
+    tag: "8.11.0",
+    created: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 3_800_000_000,
+    virtual_size: 3_800_000_000,
+    containers: 0
+  },
+  {
+    id: "sha256:yza234bcd567",
+    repository: "golang",
+    tag: "1.21-alpine",
+    created: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 320_000_000,
+    virtual_size: 320_000_000,
+    containers: 0
   }
 ]
 
@@ -151,6 +232,48 @@ const mockLogs: LogInfo[] = [
     log_path: "/var/lib/docker/containers/f7g8h9i0j1k2/f7g8h9i0j1k2-json.log",
     size: 125_000_000,
     created: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "l3m4n5o6p7q8",
+    container_name: "redis-cache",
+    log_path: "/var/lib/docker/containers/l3m4n5o6p7q8/l3m4n5o6p7q8-json.log",
+    size: 15_000_000,
+    created: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "n9o0p1q2r3s4",
+    container_name: "api-server",
+    log_path: "/var/lib/docker/containers/n9o0p1q2r3s4/n9o0p1q2r3s4-json.log",
+    size: 85_000_000,
+    created: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "t5u6v7w8x9y0",
+    container_name: "mongo-db",
+    log_path: "/var/lib/docker/containers/t5u6v7w8x9y0/t5u6v7w8x9y0-json.log",
+    size: 200_000_000,
+    created: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "z1a2b3c4d5e6",
+    container_name: "frontend-dev",
+    log_path: "/var/lib/docker/containers/z1a2b3c4d5e6/z1a2b3c4d5e6-json.log",
+    size: 35_000_000,
+    created: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "f7g8h9i0j1k3",
+    container_name: "worker-queue",
+    log_path: "/var/lib/docker/containers/f7g8h9i0j1k3/f7g8h9i0j1k3-json.log",
+    size: 150_000_000,
+    created: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    container_id: "m5n6o7p8q9r0",
+    container_name: "elasticsearch",
+    log_path: "/var/lib/docker/containers/m5n6o7p8q9r0/m5n6o7p8q9r0-json.log",
+    size: 500_000_000,
+    created: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString()
   }
 ]
 

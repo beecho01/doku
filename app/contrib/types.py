@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from humanize import naturaltime
 from pydantic import BaseModel, RootModel, Field
@@ -13,7 +14,7 @@ def truncate(name: str, limit: int) -> str:
 
 
 class DockerVersion(BaseModel):
-    platform_name: str = Field(alias=('Platform', 'Name'), default='')
+    platform_name: str = Field(alias='Platform.Name', default='')
     version: str = Field(alias='Version')
     api_version: str = Field(alias='ApiVersion')
     min_api_version: str = Field(alias='MinAPIVersion')
@@ -26,10 +27,10 @@ class DockerImage(BaseModel):
     id: str = Field(alias='Id')
     created: datetime = Field(alias='Created')
     parent_id: str = Field(alias='ParentId', default='')
-    repo_tags: list[str] | None = Field(alias='RepoTags', default_factory=list)
+    repo_tags: Optional[list[str]] = Field(alias='RepoTags', default_factory=list)
     shared_size: int = Field(alias='SharedSize', default=0)
     size: int = Field(alias='Size', default=0)
-    containers: list[str] | None = Field(default_factory=list)
+    containers: Optional[list[str]] = Field(default_factory=list)
 
     @property
     def short_id(self) -> str:
@@ -59,7 +60,7 @@ class DockerImageList(RootModel):
 
 class DockerContainer(BaseModel):
     id: str = Field(alias='Id')
-    names: list[str] | None = Field(alias='Names', default_factory=list)
+    names: Optional[list[str]] = Field(alias='Names', default_factory=list)
     image: str = Field(alias='Image')
     image_id: str = Field(alias='ImageID')
     created: datetime = Field(alias='Created')
@@ -104,8 +105,8 @@ class DockerVolume(BaseModel):
     created_at: datetime = Field(alias='CreatedAt')
     mountpoint: str = Field(alias='Mountpoint', default='')
     scope: str = Field(alias='Scope', default='local')
-    usage_data: dict | None = Field(alias='UsageData', default_factory=dict)
-    containers: list[str] | None = Field(default_factory=list)
+    usage_data: Optional[dict] = Field(alias='UsageData', default_factory=dict)
+    containers: Optional[list[str]] = Field(default_factory=list)
 
     @property
     def short_name(self) -> str:
