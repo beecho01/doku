@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  doku-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostroot:ro
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    restart: unless-stopped
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:9090
+    command: npm run dev

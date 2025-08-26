@@ -2,6 +2,8 @@
 
 Doku is a lightweight web application that helps you monitor Docker disk usage through a clean, intuitive interface.
 
+**🎉 NEW: Modernized UI** - This fork features a completely rebuilt frontend using **React + HeroUI** for a more modern, responsive, and accessible experience. See [MODERNIZATION.md](MODERNIZATION.md) for details.
+
 <div markdown="1">
 
 [![Build](https://github.com/amerkurev/doku/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/amerkurev/doku/actions/workflows/ci.yml)
@@ -12,17 +14,40 @@ Doku is a lightweight web application that helps you monitor Docker disk usage t
 
 ## Quick Start
 
-For those eager to get started, here's the fastest way to run Doku:
+### Modern React UI (Recommended)
+
+For the best experience with the new React interface:
 
 ```bash
-docker run -d -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/hostroot:ro -p 9090:9090 amerkurev/doku
+# Quick setup (requires Bun and Python)
+./setup.sh  # or setup.bat on Windows
+
+# Then start development servers from project root
+bun run dev  # Starts both frontend and backend
 ```
 
-Then open http://localhost:9090/ in your browser. That's it!
+### Classic Docker Deployment
 
-This command runs Doku with default settings and read-only access to your Docker socket and filesystem. See the sections below for more detailed setup options.
+For production or if you prefer Docker:
+
+```bash
+docker run -d -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/hostroot:ro -p 9090:9090 your-registry/doku-modern
+```
+
+Then open http://localhost:9090/ in your browser for the modern React UI, or http://localhost:9090/site for the classic interface.
 
 ![doku_screenshot](https://raw.githubusercontent.com/amerkurev/doku/master/docs/img/doku.svg)
+
+## ✨ What's New in the Modern UI
+
+- **🎨 Beautiful Design** - Built with HeroUI components and Tailwind CSS
+- **📱 Responsive Layout** - Works perfectly on mobile, tablet, and desktop
+- **🌙 Dark Mode Support** - Automatic dark/light theme switching
+- **⚡ Faster Performance** - React with optimized bundle splitting
+- **🔄 Real-time Updates** - Smart caching with React Query
+- **♿ Better Accessibility** - Full keyboard navigation and screen reader support
+- **📊 Enhanced Charts** - Interactive visualizations with Recharts
+- **🔧 Developer Experience** - Full TypeScript support and modern tooling
 
 ## Features
 

@@ -1,17 +1,24 @@
-FROM python:3.13-slim AS base
+# Multi-stage build: React frontend + Python backend
+FROM oven/bun:1 AS frontend-builder
 
-FROM base AS builder
+WORKDIR /frontend
+COPY frontend/package.json frontend/bun.lockb* ./
+RUN bun install --frozen-lockfile
+
+COPY frontend/ ./
+RUN bun run build
+
+FROM python:3.13-slim AS python-builder
 
 RUN apt update && apt install -y python3-dev && mkdir /install
 WORKDIR /install
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --prefix=/install -r ./requirements.txt
 
+FROM python:3.13-slim AS final
 
-FROM base AS final
-
-COPY --from=builder /install /usr/local
-
+COPY --from=python-builder /install /usr/local
+COPY --from=frontend-builder /frontend/dist /usr/src/app/static/dist
 
 ARG APP_DIR=/usr/src/app
 ARG SUPERVISOR_CONF=/usr/local/etc/supervisord.conf
@@ -35,7 +42,6 @@ ENV IN_DOCKER=1 \
 	GITHUB_REPO=$GITHUB_REPO \
 	GIT_SHA=$GIT_SHA \
 	GIT_TAG=$GIT_TAG
-
 
 COPY app $APP_DIR
 COPY conf/supervisord.conf $SUPERVISOR_CONF

@@ -1,0 +1,36 @@
+{
+  "name": "doku",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Docker disk usage monitoring with modern React frontend",
+  "scripts": {
+    "dev": "concurrently \"bun run frontend:dev\" \"bun run backend:dev\"",
+    "dev:full": "concurrently \"bun run frontend:dev\" \"bun run backend:dev\"",
+    "dev:network": "concurrently \"bun run frontend:dev:network\" \"bun run backend:dev:network\"",
+    "frontend:dev": "cd frontend && bun run dev",
+    "frontend:dev:network": "cd frontend && bun run dev --host 0.0.0.0",
+    "backend:dev": "cd app && python main.py",
+    "backend:dev:network": "cd app && python main.py --host 0.0.0.0",
+    "build": "cd frontend && bun run build",
+    "build:frontend": "cd frontend && bun run build",
+    "build:prod": "cd frontend && bun run build",
+    "start": "bun run build && cd app && python main.py",
+    "start:prod": "bun run build && cd app && python main.py",
+    "setup": "cd frontend && bun install && bun run build",
+    "setup:sh": "./setup.sh",
+    "setup:bat": "./setup.bat",
+    "clean": "cd frontend && bun run clean",
+    "lint": "cd frontend && bun run lint",
+    "typecheck": "cd frontend && bun run typecheck",
+    "test:frontend": "cd frontend && bun test",
+    "test:backend": "cd app && python -m pytest",
+    "docker:build": "docker build -t doku-modern .",
+    "docker:run": "docker run -d -v /var/run/docker.sock:/var/run/docker.sock:ro -v /:/hostroot:ro -p 9090:9090 doku-modern",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:stop": "docker stop $(docker ps -q --filter ancestor=doku-modern)",
+    "preview": "cd frontend && bun run preview"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

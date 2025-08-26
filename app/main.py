@@ -4,24 +4,50 @@ from pathlib import Path
 
 from fastapi import FastAPI, status
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import settings
 from contrib.logger import setup_logger
-from server.router import site
+from server.router import site, api
 from server.state import lifespan
 
 
 app = FastAPI(lifespan=lifespan, root_path=settings.ROOT_PATH)
 app.mount('/static', StaticFiles(directory=settings.STATIC_DIR), name='static')
+
+# Include API routes for the React frontend
+app.include_router(api.router)
+
+# Keep the old HTML routes for backward compatibility
 app.include_router(site.router)
 
 
 @app.get('/', response_class=HTMLResponse, include_in_schema=False)
 async def index(request: Request):
-    url = request.url_for('dashboard')
-    return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+    """Serve the React app for the root route"""
+    react_index = settings.STATIC_DIR / 'dist' / 'index.html'
+    if react_index.exists():
+        return FileResponse(react_index)
+    else:
+        # Fallback to old dashboard if React build doesn't exist
+        url = request.url_for('dashboard')
+        return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+
+
+# Catch-all route to serve React app for client-side routing
+@app.get('/{path:path}', response_class=HTMLResponse, include_in_schema=False)
+async def spa_catchall(path: str):
+    """Serve React app for all frontend routes"""
+    # Skip API routes and static files
+    if path.startswith('api/') or path.startswith('static/') or path.startswith('site/'):
+        return RedirectResponse(url=f'/{path}', status_code=status.HTTP_404_NOT_FOUND)
+
+    react_index = settings.STATIC_DIR / 'dist' / 'index.html'
+    if react_index.exists():
+        return FileResponse(react_index)
+    else:
+        return RedirectResponse(url='/site/', status_code=status.HTTP_303_SEE_OTHER)
 
 
 def main():
