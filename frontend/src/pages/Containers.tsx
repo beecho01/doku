@@ -15,12 +15,12 @@ import {
   Spinner,
   Button
 } from '@heroui/react'
-import { Container, Search, RefreshCw, Database, Activity, Clock, HardDrive } from 'lucide-react'
+import { Container, Search, RefreshCw } from 'lucide-react'
 import { apiService } from '@/services/api'
 import type { ContainerInfo } from '@/types'
 
 export default function Containers() {
-  const [searchValue, setSearchValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'stopped'>('all')
 
   const { data: containers, isLoading, error, refetch, isFetching } = useQuery<ContainerInfo[]>(
@@ -50,13 +50,13 @@ export default function Containers() {
     if (!containers) return []
 
     return containers.filter(container => {
-      const matchesSearch = container.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-                           container.image.toLowerCase().includes(searchValue.toLowerCase())
+      const matchesSearch = container.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           container.image.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === 'all' || container.status === statusFilter
 
       return matchesSearch && matchesStatus
     })
-  }, [containers, searchValue, statusFilter])
+  }, [containers, searchQuery, statusFilter])
 
   const summary = useMemo(() => {
     if (!containers) return { total: 0, running: 0, stopped: 0, totalSize: 0 }
@@ -112,43 +112,47 @@ export default function Containers() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Card
-          className="aspect-square cursor-pointer hover:scale-105 transition-transform"
+          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
+            statusFilter === 'all' ? 'ring-2 ring-blue-500 shadow-lg' : ''
+          }`}
           isPressable
           onPress={() => setStatusFilter('all')}
         >
           <CardBody className="p-3 bg-blue-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Container className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total containers</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total</p>
             </div>
             <p className="text-lg font-bold">{summary.total}</p>
           </CardBody>
         </Card>
 
+        {/* Running */}
         <Card
-          className="aspect-square cursor-pointer hover:scale-105 transition-transform"
+          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
+            statusFilter === 'running' ? 'ring-2 ring-green-500 shadow-lg' : ''
+          }`}
           isPressable
           onPress={() => setStatusFilter('running')}
         >
-          <CardBody className="p-3 bg-green-500/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-green-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Activity className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Running</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Running</p>
             </div>
             <p className="text-lg font-bold">{summary.running}</p>
           </CardBody>
         </Card>
 
         <Card
-          className="aspect-square cursor-pointer hover:scale-105 transition-transform"
+          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
+            statusFilter === 'stopped' ? 'ring-2 ring-red-500 shadow-lg' : ''
+          }`}
           isPressable
           onPress={() => setStatusFilter('stopped')}
         >
-          <CardBody className="p-3 bg-gray-500/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-red-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Clock className="w-3 h-3 text-gray-600 dark:text-gray-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Stopped</p>
             </div>
             <p className="text-lg font-bold">{summary.stopped}</p>
@@ -156,9 +160,8 @@ export default function Containers() {
         </Card>
 
         <Card className="aspect-square">
-          <CardBody className="p-3 bg-purple-500/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-purple-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-purple-600 dark:text-purple-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total Size</p>
             </div>
             <p className="text-lg font-bold">{formatBytes(summary.totalSize)}</p>
@@ -166,81 +169,80 @@ export default function Containers() {
         </Card>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <Input
-          isClearable
-          className="w-full sm:max-w-xs"
-          placeholder="Search containers..."
-          startContent={<Search className="w-4 h-4" />}
-          value={searchValue}
-          onValueChange={setSearchValue}
-        />
-
-        <div className="flex justify-between sm:justify-end">
-          <p className="text-sm text-gray-500 flex items-center">
-            Containers shown: {filteredContainers.length}
-          </p>
-        </div>
-      </div>
-
       {/* Containers Table */}
-      <Card>
-        <Table aria-label="Containers table" className="min-h-[400px]">
-          <TableHeader>
-            <TableColumn>NAME</TableColumn>
-            <TableColumn>IMAGE</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>CREATED</TableColumn>
-            <TableColumn>SIZE</TableColumn>
-            <TableColumn>PORTS</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="No containers found">
-            {filteredContainers.map((container) => (
-              <TableRow key={container.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Container className="w-4 h-4 text-gray-400" />
-                    <span className="font-mono text-sm">{container.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {container.image}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    color={container.status === 'running' ? 'success' : 'default'}
-                    size="sm"
-                    variant="flat"
-                  >
-                    {container.status}
-                  </Chip>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(container.created)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm">
-                    {formatBytes(container.size)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {container.ports.map((port, index) => (
-                      <Chip key={index} size="sm" variant="flat" color="primary">
-                        {port}
-                      </Chip>
-                    ))}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <Card className='p-4'>
+        <CardHeader className="p-0 pb-4 m-0 w-full flex">
+          <div className="flex flex-row items-center justify-between gap-4 w-full">
+            <Input
+              placeholder="Search containers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              startContent={<Search className="w-4 h-4 text-gray-400" />}
+              className="max-w-xs"
+              variant="flat"
+            />
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              Showing {filteredContainers.length} of {containers?.length || 0} containers
+            </div>
+          </div>
+        </CardHeader>
+        <CardBody className="px-0 py-0">
+          <Table aria-label="Docker Containers table" removeWrapper>
+            <TableHeader>
+              <TableColumn>NAME</TableColumn>
+              <TableColumn>IMAGE</TableColumn>
+              <TableColumn>STATUS</TableColumn>
+              <TableColumn>CREATED</TableColumn>
+              <TableColumn>SIZE</TableColumn>
+              <TableColumn>PORTS</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="No containers found">
+              {filteredContainers.map((container) => (
+                <TableRow key={container.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Container className="w-4 h-4 text-gray-400" />
+                      <span className="font-mono text-sm">{container.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {container.image}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      color={container.status === 'running' ? 'success' : 'default'}
+                      size="sm"
+                      variant="flat"
+                    >
+                      {container.status}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {formatDate(container.created)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-sm">
+                      {formatBytes(container.size)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {container.ports.map((port, index) => (
+                        <Chip key={index} size="sm" variant="flat" color="primary">
+                          {port}
+                        </Chip>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardBody>
       </Card>
     </div>
   )

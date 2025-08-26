@@ -91,7 +91,7 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
             as="a"
             href={card.href}
           >
-            <CardHeader className="flex flex-row items-start justify-between gap-2">
+            <CardHeader className="flex flex-row items-start justify-between gap-2 pb-0">
               <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate p-0 m-0 flex-1">
                 {card.title}
               </p>

@@ -45,7 +45,6 @@ export default function UsageChart({ data, diskUsage }: UsageChartProps) {
   }
 
   const chartData = useMemo(() => {
-
     // Create array of all items with their values
     const allItems = [
       { name: 'Images', value: data.images.size },
@@ -77,9 +76,7 @@ export default function UsageChart({ data, diskUsage }: UsageChartProps) {
         value: item.value,
         itemStyle: { color: DOKU_COLORS[reversedColorIndex] },
         label: {
-          color: item.name === 'Available Space'
-            ? (effectiveTheme === 'dark' ? '#6b7280' : '#9ca3af')
-            : (effectiveTheme === 'dark' ? '#ffffff' : '#000000')
+          color: effectiveTheme === 'dark' ? '#ffffff' : '#ffffff'
         }
       }
     })

@@ -92,7 +92,7 @@ export default function Dashboard() {
             <p className="pt-1 text-xs text-gray-500 pb-3">Sizes by component</p>
           </CardHeader>*/}
           <div className='p-0 m-0'>
-            <div className="h-56 sm:h-64">
+            <div className="h-56 sm:h-64 text-white">
               <UsageChart data={data.summary} diskUsage={data.disk_usage} />
             </div>
           </div>

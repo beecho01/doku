@@ -146,7 +146,6 @@ export default function Images() {
         >
           <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Package className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400">Total</p>
             </div>
             <p className="text-lg font-bold">{data.length}</p>
@@ -161,9 +160,8 @@ export default function Images() {
           isPressable
           onPress={() => setActiveFilter('in-use')}
         >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-green-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Container className="w-3 h-3 text-green-600 dark:text-green-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400">In Use</p>
             </div>
             <p className="text-lg font-bold">{activeImages}</p>
@@ -178,9 +176,8 @@ export default function Images() {
           isPressable
           onPress={() => setActiveFilter('unused')}
         >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-red-500/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <Package className="w-3 h-3 text-red-600 dark:text-red-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400">Unused</p>
             </div>
             <p className="text-lg font-bold">{unusedImages}</p>
@@ -189,9 +186,8 @@ export default function Images() {
 
         {/* Virtual Size */}
         <Card className="aspect-square">
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
+          <CardBody className="p-2 bg-secondary/20 flex flex-col items-center justify-center text-center h-full">
             <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <p className="text-xs text-gray-600 dark:text-gray-400">Virtual</p>
             </div>
             <p className="text-sm font-bold">{formatSize(totalVirtualSize)}</p>
