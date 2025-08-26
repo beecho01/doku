@@ -105,7 +105,6 @@ export default function Dashboard() {
       </h2>
       <SummaryCards data={data.summary} />
 
-
       <h2 className='text-lg font-semibold pl-1 pt-4'>
         Last Scan
       </h2>

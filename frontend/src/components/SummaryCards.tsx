@@ -6,9 +6,9 @@ interface SummaryCardsProps {
     containers: { count: number; size: number }
     volumes: { count: number; size: number }
     build_cache: { count: number; size: number }
-    overlay2: { size: number }
-    logs: { size: number }
-    bind_mounts: { size: number }
+    overlay2: { count: number; size: number }
+    logs: { count: number; size: number }
+    bind_mounts: { count: number; size: number }
   }
 }
 
@@ -56,7 +56,7 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
     },
     {
       title: 'Overlay2',
-      count: 0,
+      count: data.overlay2.count,
       size: data.overlay2.size,
       color: 'doku',
       colorVariant: '300',
@@ -64,7 +64,7 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
     },
     {
       title: 'Container Logs',
-      count: 0,
+      count: data.logs.count,
       size: data.logs.size,
       color: 'doku',
       colorVariant: '800',
@@ -72,7 +72,7 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
     },
     {
       title: 'Bind Mounts',
-      count: 0,
+      count: data.bind_mounts.count,
       size: data.bind_mounts.size,
       color: 'doku',
       colorVariant: '200',

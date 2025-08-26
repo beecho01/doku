@@ -82,8 +82,8 @@ export interface DashboardData {
     containers: { count: number; size: number }
     volumes: { count: number; size: number }
     build_cache: { count: number; size: number }
-    overlay2: { size: number }
-    logs: { size: number }
-    bind_mounts: { size: number }
+    overlay2: { count: number; size: number }
+    logs: { count: number; size: number }
+    bind_mounts: { count: number; size: number }
   }
 }

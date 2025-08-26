@@ -29,13 +29,13 @@ const mockDashboardData: DashboardData = {
     scan_duration: 12500 // 12.5 seconds
   },
   summary: {
-    images: { count: 12, size: 15_500_000_000 }, // 15.5 GB
-    containers: { count: 8, size: 8_200_000_000 }, // 8.2 GB
-    volumes: { count: 15, size: 12_300_000_000 }, // 12.3 GB
-    build_cache: { count: 25, size: 5_800_000_000 }, // 5.8 GB
-    overlay2: { size: 2_100_000_000 }, // 2.1 GB
-    logs: { size: 850_000_000 }, // 850 MB
-    bind_mounts: { size: 250_000_000 } // 250 MB
+    images: { count: 12, size: 15_285_000_000 }, // 15.3 GB (calculated from 12 images)
+    containers: { count: 3, size: 4_450_000_000 }, // 4.5 GB (calculated from 3 containers)
+    volumes: { count: 8, size: 49_075_125_000 }, // 49.1 GB (calculated from 8 volumes)
+    build_cache: { count: 6, size: 8_450_000_000 }, // 8.5 GB (calculated from 6 cache entries)
+    overlay2: { count: 156, size: 2_100_000_000 }, // 2.1 GB (156 total storage layers)
+    logs: { count: 8, size: 1_155_000_000 }, // 1.2 GB (calculated from 8 log entries)
+    bind_mounts: { count: 7, size: 3_225_000_000 } // 3.2 GB (calculated from 7 bind mounts)
   }
 }
 
@@ -196,6 +196,54 @@ const mockVolumes: VolumeInfo[] = [
     size: 125_000,
     mount_point: "/var/lib/docker/volumes/nginx_config/_data",
     containers: 1
+  },
+  {
+    name: "mongo_data",
+    driver: "local",
+    created: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 12_800_000_000,
+    mount_point: "/var/lib/docker/volumes/mongo_data/_data",
+    containers: 1
+  },
+  {
+    name: "redis_data",
+    driver: "local",
+    created: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 250_000_000,
+    mount_point: "/var/lib/docker/volumes/redis_data/_data",
+    containers: 1
+  },
+  {
+    name: "app_uploads",
+    driver: "local",
+    created: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 3_200_000_000,
+    mount_point: "/var/lib/docker/volumes/app_uploads/_data",
+    containers: 2
+  },
+  {
+    name: "elasticsearch_data",
+    driver: "local",
+    created: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 18_500_000_000,
+    mount_point: "/var/lib/docker/volumes/elasticsearch_data/_data",
+    containers: 0
+  },
+  {
+    name: "backup_storage",
+    driver: "local",
+    created: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 5_100_000_000,
+    mount_point: "/var/lib/docker/volumes/backup_storage/_data",
+    containers: 0
+  },
+  {
+    name: "shared_cache",
+    driver: "local",
+    created: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    size: 850_000_000,
+    mount_point: "/var/lib/docker/volumes/shared_cache/_data",
+    containers: 3
   }
 ]
 
@@ -215,6 +263,38 @@ const mockBuildCache: BuildCacheInfo[] = [
     created: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     last_used: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     usage_count: 8
+  },
+  {
+    id: "cache789ghi",
+    type: "regular",
+    size: 1_200_000_000,
+    created: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    last_used: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    usage_count: 22
+  },
+  {
+    id: "cache012jkl",
+    type: "source.local",
+    size: 650_000_000,
+    created: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    last_used: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    usage_count: 5
+  },
+  {
+    id: "cache345mno",
+    type: "inline",
+    size: 3_200_000_000,
+    created: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    last_used: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    usage_count: 18
+  },
+  {
+    id: "cache678pqr",
+    type: "regular",
+    size: 450_000_000,
+    created: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    last_used: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    usage_count: 3
   }
 ]
 
@@ -290,6 +370,41 @@ const mockBindMounts: BindMountInfo[] = [
     destination: "/data",
     container_name: "postgres-db",
     size: 85_000_000,
+    type: "bind"
+  },
+  {
+    source: "/home/user/config",
+    destination: "/etc/config",
+    container_name: "api-server",
+    size: 45_000_000,
+    type: "bind"
+  },
+  {
+    source: "/var/log/app",
+    destination: "/logs",
+    container_name: "frontend-dev",
+    size: 200_000_000,
+    type: "bind"
+  },
+  {
+    source: "/home/user/uploads",
+    destination: "/uploads",
+    container_name: "mongo-db",
+    size: 1_800_000_000,
+    type: "bind"
+  },
+  {
+    source: "/tmp/cache",
+    destination: "/cache",
+    container_name: "redis-cache",
+    size: 320_000_000,
+    type: "bind"
+  },
+  {
+    source: "/home/user/workspace",
+    destination: "/workspace",
+    container_name: "worker-queue",
+    size: 650_000_000,
     type: "bind"
   }
 ]

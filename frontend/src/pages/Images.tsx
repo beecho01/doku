@@ -75,11 +75,6 @@ export default function Images() {
     return 'primary'
   }
 
-  const totalSize = useMemo(() => {
-    if (!data) return 0
-    return data.reduce((acc, image) => acc + image.size, 0)
-  }, [data])
-
   const totalVirtualSize = useMemo(() => {
     if (!data) return 0
     return data.reduce((acc, image) => acc + image.virtual_size, 0)
