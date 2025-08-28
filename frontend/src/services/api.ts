@@ -55,10 +55,10 @@ export const apiService = {
     mockApiService.getVolumes
   ),
 
-  // Build cache
-  getBuildCache: createApiMethod(
+  // Cache
+  getCache: createApiMethod(
     () => api.get('/build-cache').then(res => res.data),
-    mockApiService.getBuildCache
+    mockApiService.getCache
   ),
 
   // Container logs
@@ -77,6 +77,38 @@ export const apiService = {
   getOverlay2: createApiMethod(
     () => api.get('/overlay2').then(res => res.data),
     mockApiService.getOverlay2
+  ),
+
+  // Container logs (real-time from Docker API)
+  getContainerLogs: (containerId: string, lines: number = 100) => {
+    if (useMockData) {
+      return mockApiService.getContainerLogs(containerId, lines)
+    }
+    return api.get(`/container-logs/${containerId}?lines=${lines}`).then(res => res.data)
+  },
+
+  // System information
+  getSystemInfo: createApiMethod(
+    () => api.get('/system-info').then(res => res.data),
+    mockApiService.getSystemInfo
+  ),
+
+  // Docker daemon ping
+  pingDocker: createApiMethod(
+    () => api.get('/system-ping').then(res => res.data),
+    mockApiService.pingDocker
+  ),
+
+  // Docker authentication check
+  checkAuth: createApiMethod(
+    () => api.get('/system-auth').then(res => res.data),
+    mockApiService.checkAuth
+  ),
+
+  // Docker events
+  getEvents: createApiMethod(
+    () => api.get('/events').then(res => res.data),
+    mockApiService.getEvents
   ),
 
   // Trigger scan

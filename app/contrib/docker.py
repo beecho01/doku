@@ -12,13 +12,25 @@ def docker_from_env() -> docker.DockerClient:
     """
     Create a Docker client with settings from environment.
     """
-    client = docker.from_env(
-        version=settings.DOCKER_VERSION,
-        timeout=settings.DOCKER_TIMEOUT,
-        max_pool_size=settings.DOCKER_MAX_POOL_SIZE,
-        environment=settings.DOCKER_ENV,
-        use_ssh_client=settings.DOCKER_USE_SSH_CLIENT,
-    )
+    import os
+
+    # For Windows Docker Desktop, use named pipe
+    if os.name == 'nt':
+        client = docker.DockerClient(
+            base_url='npipe:////./pipe/docker_engine',
+            version=settings.DOCKER_VERSION,
+            timeout=settings.DOCKER_TIMEOUT,
+            max_pool_size=settings.DOCKER_MAX_POOL_SIZE,
+            use_ssh_client=settings.DOCKER_USE_SSH_CLIENT,
+        )
+    else:
+        client = docker.from_env(
+            version=settings.DOCKER_VERSION,
+            timeout=settings.DOCKER_TIMEOUT,
+            max_pool_size=settings.DOCKER_MAX_POOL_SIZE,
+            environment=settings.DOCKER_ENV,
+            use_ssh_client=settings.DOCKER_USE_SSH_CLIENT,
+        )
     return client
 
 

@@ -2,19 +2,19 @@ import { useQuery } from 'react-query'
 import {
   Card,
   CardBody,
-  CardHeader,
   Chip,
   Spinner,
-  Button,
   Table,
   TableHeader,
   TableColumn,
   TableBody,
   TableRow,
   TableCell,
-  Input
+  Input,
+  Tabs,
+  Tab,
 } from '@heroui/react'
-import { Link, RefreshCw, Search, Container, FolderOpen, HardDrive, ArrowRight } from 'lucide-react'
+import { Search, Container, FolderOpen, ArrowRight } from 'lucide-react'
 import { apiService } from '@/services/api'
 import type { BindMountInfo } from '@/types'
 import { useState, useMemo } from 'react'
@@ -22,8 +22,12 @@ import { useState, useMemo } from 'react'
 export default function BindMounts() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'large' | 'containers'>('all')
+  const [sortDescriptor, setSortDescriptor] = useState<{
+    column: string;
+    direction: "ascending" | "descending";
+  }>({ column: "", direction: "ascending" });
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<BindMountInfo[]>(
+  const { data, isLoading, error } = useQuery<BindMountInfo[]>(
     'bind-mounts',
     apiService.getBindMounts,
     { refetchInterval: 30000 }
@@ -43,8 +47,50 @@ export default function BindMounts() {
       filtered = filtered.filter(mount => mount.size > 500_000_000) // > 500MB
     }
 
-    return filtered.sort((a, b) => b.size - a.size)
-  }, [data, searchQuery, activeFilter])
+    // Apply sorting
+    if (sortDescriptor.column) {
+      filtered = filtered.sort((a: BindMountInfo, b: BindMountInfo) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortDescriptor.column) {
+          case "container_name":
+            aValue = a.container_name.toLowerCase();
+            bValue = b.container_name.toLowerCase();
+            break;
+          case "source":
+            aValue = a.source.toLowerCase();
+            bValue = b.source.toLowerCase();
+            break;
+          case "destination":
+            aValue = a.destination.toLowerCase();
+            bValue = b.destination.toLowerCase();
+            break;
+          case "type":
+            aValue = a.type.toLowerCase();
+            bValue = b.type.toLowerCase();
+            break;
+          case "size":
+            aValue = a.size;
+            bValue = b.size;
+            break;
+          default:
+            return 0;
+        }
+
+        if (sortDescriptor.direction === "ascending") {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    } else {
+      // Default sort by size descending
+      filtered = filtered.sort((a, b) => b.size - a.size);
+    }
+
+    return filtered
+  }, [data, searchQuery, activeFilter, sortDescriptor])
 
   const formatSize = (bytes: number) => {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -57,11 +103,6 @@ export default function BindMounts() {
     if (path.length <= maxLength) return path
     return `...${path.slice(-(maxLength - 3))}`
   }
-
-  const totalSize = useMemo(() => {
-    if (!data) return 0
-    return data.reduce((acc, mount) => acc + mount.size, 0)
-  }, [data])
 
   const largeMounts = useMemo(() => {
     if (!data) return 0
@@ -106,139 +147,97 @@ export default function BindMounts() {
             Manage and monitor Docker bind mounts
           </p>
         </div>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          onPress={() => refetch()}
-          isDisabled={isFetching}
-          variant="flat"
-        >
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'all' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('all')}
+      <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Tabs
+          aria-label="Filter Options"
+          selectedKey={activeFilter}
+          onSelectionChange={(key) => setActiveFilter(key as "all" | "large" | "containers")}
+          variant="solid"
+          color="primary"
+          radius="full"
+          className="md:flex-shrink-0"
         >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Link className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total</p>
-            </div>
-            <p className="text-lg font-bold">{data.length}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'large' ? 'ring-2 ring-orange-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('large')}
-        >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Large</p>
-            </div>
-            <p className="text-lg font-bold">{largeMounts}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'containers' ? 'ring-2 ring-green-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('containers')}
-        >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Container className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Apps</p>
-            </div>
-            <p className="text-lg font-bold">{uniqueContainers}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Size</p>
-            </div>
-            <p className="text-sm font-bold">{formatSize(totalSize)}</p>
-          </CardBody>
-        </Card>
+          <Tab key="all" title={`All (${data.length})`}></Tab>
+          <Tab key="large" title={`Large (${largeMounts})`}></Tab>
+          <Tab key="containers" title={`Apps (${uniqueContainers})`}></Tab>
+        </Tabs>
+        <div className="flex md:justify-end md:flex-1">
+          <Input
+            placeholder="Search bind mounts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<Search className="w-4 h-4 text-gray-400" />}
+            className="w-full md:max-w-sm"
+            variant="flat"
+            isClearable
+            onClear={() => setSearchQuery('')}
+          />
+        </div>
       </div>
 
       {/* Bind Mounts Table */}
-      <Card className='p-4'>
-        <CardHeader className="p-0 pb-4 m-0 w-full flex">
-          <div className="flex flex-row items-center justify-between gap-4 w-full">
-            <Input
-              placeholder="Search bind mounts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              startContent={<Search className="w-4 h-4 text-gray-400" />}
-              className="max-w-xs"
-              variant="flat"
-            />
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredMounts.length} of {data.length} bind mounts
-            </div>
-          </div>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <Table aria-label="Bind Mounts table" removeWrapper>
+      <Card className="p-0 bg-transparent border-0 border-blue-400/15 elevation-0 shadow-none">
+        <CardBody className="px-0 py-0 bg-blue-400/5 rounded-lg">
+          <Table
+            aria-label="Bind Mounts table"
+            removeWrapper
+            sortDescriptor={sortDescriptor}
+            onSortChange={(descriptor: any) => setSortDescriptor(descriptor)}
+          >
             <TableHeader>
-              <TableColumn>CONTAINER</TableColumn>
-              <TableColumn>SOURCE PATH</TableColumn>
-              <TableColumn>DESTINATION</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn>SIZE</TableColumn>
+              <TableColumn key="container_name" allowsSorting>Container</TableColumn>
+              <TableColumn key="source" allowsSorting>Source Path</TableColumn>
+              <TableColumn key="destination" allowsSorting>Destination</TableColumn>
+              <TableColumn key="type" allowsSorting>Type</TableColumn>
+              <TableColumn key="size" allowsSorting>Size</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredMounts.map((mount, index) => (
-                <TableRow key={`${mount.container_name}-${mount.source}-${index}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Container className="w-4 h-4 text-blue-500" />
-                      <div className="font-medium">{mount.container_name}</div>
+              {filteredMounts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-gray-500">No bind mounts to display</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="w-3 h-3 text-gray-400" />
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                        {truncatePath(mount.source)}
-                      </code>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <ArrowRight className="w-3 h-3 text-gray-400" />
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                        {mount.destination}
-                      </code>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color="primary">
-                      {mount.type}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{formatSize(mount.size)}</div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredMounts.map((mount, index) => (
+                  <TableRow key={`${mount.container_name}-${mount.source}-${index}`}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Container className="w-4 h-4 text-blue-500" />
+                        <div className="font-medium">{mount.container_name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="w-3 h-3 text-gray-400" />
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                          {truncatePath(mount.source)}
+                        </code>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <ArrowRight className="w-3 h-3 text-gray-400" />
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                          {mount.destination}
+                        </code>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="sm" variant="flat" color="primary">
+                        {mount.type}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{formatSize(mount.size)}</div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardBody>

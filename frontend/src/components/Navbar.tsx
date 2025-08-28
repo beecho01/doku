@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import { useQuery } from "react-query";
+import type { ImageInfo } from "@/types";
 import {
   Navbar as HeroNavbar,
   NavbarBrand,
@@ -12,19 +14,22 @@ import {
   DropdownItem
 } from '@heroui/react'
 import { useLocation } from 'react-router-dom'
-import { Container, HardDrive, Image, Archive, FolderOpen, FileText, Link as LinkIcon, Play, ChevronDown, Sun, Moon, Monitor } from 'lucide-react'
+import { Container, HardDrive, Image, Archive, FolderOpen, FileText, Link as LinkIcon, ChevronDown, Sun, Moon, Monitor, RefreshCw, Ellipsis } from "lucide-react";
+
 import { useTheme } from '@/contexts/ThemeContext'
+import { apiService } from '@/services/api';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: HardDrive },
   { name: 'Images', href: '/images', icon: Image },
   { name: 'Containers', href: '/containers', icon: Container },
   { name: 'Volumes', href: '/volumes', icon: Archive },
-  { name: 'Build Cache', href: '/build-cache', icon: FolderOpen },
+  { name: 'Cache', href: '/cache', icon: FolderOpen },
   { name: 'Overlay2', href: '/overlay2', icon: HardDrive },
   { name: 'Logs', href: '/logs', icon: FileText },
   { name: 'Bind Mounts', href: '/bind-mounts', icon: LinkIcon },
 ]
+
 
 export default function Navbar() {
   const location = useLocation()
@@ -34,6 +39,12 @@ export default function Navbar() {
   const getCurrentThemeIcon = () => {
     return effectiveTheme === 'dark' ? Moon : Sun
   }
+
+  const { refetch, isFetching } = useQuery<ImageInfo[]>(
+    "images",
+    apiService.getImages,
+    { refetchInterval: 30000 }
+  );
 
   // Breakpoint tracking
   useEffect(() => {
@@ -160,15 +171,15 @@ export default function Navbar() {
             {navigationItems.length > 5 && (
               <Dropdown>
                 <DropdownTrigger>
-                  <Button
-                    variant="light"
-                    className="flex items-center gap-1 px-2"
-                    endContent={<ChevronDown size={14} />}
-                    size="sm"
+                  <Link
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
+                      navigationItems.slice(5).some(item => location.pathname === item.href)
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                   >
-                    <span className="hidden xl:inline">More</span>
-                    <span className="xl:hidden">+</span>
-                  </Button>
+                    <Ellipsis size={16} />
+                  </Link>
                 </DropdownTrigger>
                 <DropdownMenu>
                   {navigationItems.slice(5).map((item) => {
@@ -189,8 +200,24 @@ export default function Navbar() {
           </div>
         </NavbarContent>
 
+
+
         {/* Theme toggle for mobile */}
         <NavbarContent className="md:hidden" justify="end">
+          <NavbarItem>
+              <Button
+                size="sm"
+                isIconOnly
+                onPress={() => refetch()}
+                isDisabled={isFetching}
+                variant="light"
+                aria-label={isFetching ? "Refreshing" : "Refresh"}
+                className="text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+
+              >
+                <RefreshCw size={18} className={isFetching ? 'animate-spin' : ''} />
+              </Button>
+          </NavbarItem>
           <NavbarItem>
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
@@ -235,17 +262,21 @@ export default function Navbar() {
         {/* Desktop Actions */}
         <NavbarContent className="hidden md:flex" justify="end">
           <NavbarItem>
-            <Button
-              color="primary"
-              variant="flat"
-              startContent={<Play size={16} />}
-              size="sm"
-              className="px-3"
-            >
-              <span className="hidden md:inline">Scan Now</span>
-              <span className="md:hidden">Scan</span>
-            </Button>
-          </NavbarItem>
+              <Button
+                size="sm"
+                startContent={
+                  <RefreshCw
+                    className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`}
+                  />
+                }
+                onPress={() => refetch()}
+                isDisabled={isFetching}
+                variant="flat"
+                className="text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                {isFetching ? "Refreshing" : "Refresh"}
+              </Button>
+            </NavbarItem>
           <NavbarItem>
             <Dropdown placement="bottom-end">
               <DropdownTrigger>

@@ -7,7 +7,7 @@ interface UsageChartProps {
     images: { count: number; size: number }
     containers: { count: number; size: number }
     volumes: { count: number; size: number }
-    build_cache: { count: number; size: number }
+    cache: { count: number; size: number }
     overlay2: { size: number }
     logs: { size: number }
     bind_mounts: { size: number }
@@ -45,15 +45,20 @@ export default function UsageChart({ data, diskUsage }: UsageChartProps) {
   }
 
   const chartData = useMemo(() => {
+    // Guard clause to ensure data exists
+    if (!data) {
+      return []
+    }
+
     // Create array of all items with their values
     const allItems = [
-      { name: 'Images', value: data.images.size },
-      { name: 'Containers', value: data.containers.size },
-      { name: 'Volumes', value: data.volumes.size },
-      { name: 'Build Cache', value: data.build_cache.size },
-      { name: 'Overlay2', value: data.overlay2.size },
-      { name: 'Logs', value: data.logs.size },
-      { name: 'Bind Mounts', value: data.bind_mounts.size },
+      { name: 'Images', value: data.images?.size || 0 },
+      { name: 'Containers', value: data.containers?.size || 0 },
+      { name: 'Volumes', value: data.volumes?.size || 0 },
+      { name: 'Build Cache', value: data.cache?.size || 0 },
+      { name: 'Overlay2', value: data.overlay2?.size || 0 },
+      { name: 'Logs', value: data.logs?.size || 0 },
+      { name: 'Bind Mounts', value: data.bind_mounts?.size || 0 },
     ].filter(item => item.value > 0)
 
     // Sort by size (descending) - largest to smallest by actual byte value
@@ -165,11 +170,20 @@ export default function UsageChart({ data, diskUsage }: UsageChartProps) {
 
   return (
     <div className="w-full h-full p-0 m-0">
-      <ReactECharts
-        option={option}
-        style={{ height: '100%', width: '100%' }}
-        opts={{ renderer: 'canvas' }}
-      />
+      {chartData.length > 0 ? (
+        <ReactECharts
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+          <div className="text-center">
+            <div className="text-sm">No usage data available</div>
+            <div className="text-xs mt-1">Scanners may not be running</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

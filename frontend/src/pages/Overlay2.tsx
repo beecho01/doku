@@ -5,34 +5,21 @@ import {
   CardHeader,
   Chip,
   Spinner,
-  Button
+  Alert
 } from '@heroui/react'
-import { Layers, RefreshCw, HardDrive, AlertTriangle, Info, Database } from 'lucide-react'
+import { Layers, HardDrive, Database } from 'lucide-react'
 import { apiService } from '@/services/api'
+import LayerBreakdown from '@/components/LayerBreakdown'
+import type { Overlay2Data } from '@/types'
 
 export default function Overlay2() {
-  const { data, isLoading, error, refetch, isFetching } = useQuery<any[]>(
+  const { data: overlay2Data, isLoading, error } = useQuery<Overlay2Data>(
     'overlay2',
     apiService.getOverlay2,
     { refetchInterval: 30000 }
   )
 
-  // Mock some overlay2 data since the API returns empty array
-  const mockOverlay2Data = {
-    totalSize: 2_100_000_000, // 2.1 GB from dashboard summary
-    totalLayers: 156,
-    activeLayers: 24, // Active layers currently in use by containers
-    activeContainers: 8,
-    unusedLayers: 23,
-    sharedLayers: 18 // Layers shared between multiple images
-  }
 
-  const formatSize = (bytes: number) => {
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    if (bytes === 0) return '0 B'
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
-  }
 
   if (isLoading) {
     return (
@@ -44,11 +31,23 @@ export default function Overlay2() {
 
   if (error) {
     return (
-      <Card className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
-        <CardBody className="px-6 py-6">
-          <p className="text-red-600 dark:text-red-400">Failed to load overlay2 data. Please try again.</p>
-        </CardBody>
-      </Card>
+      <Alert
+        color="danger"
+        variant="flat"
+        title="Error"
+        description="Failed to load overlay2 data. Please try again."
+      />
+    )
+  }
+
+  if (!overlay2Data) {
+    return (
+      <Alert
+        color="warning"
+        variant="flat"
+        title="No Data"
+        description="No overlay2 data available."
+      />
     )
   }
 
@@ -64,82 +63,21 @@ export default function Overlay2() {
             Monitor Docker's overlay2 storage driver and filesystem layers
           </p>
         </div>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          onPress={() => refetch()}
-          isDisabled={isFetching}
-          variant="flat"
-        >
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
       </div>
 
-      {/* Info Card */}
-      <Card className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-        <CardBody className="px-6 py-4">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                About Overlay2 Storage Driver
-              </h3>
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                Overlay2 is Docker's default storage driver, managing filesystem layers for containers and images.
-                It uses copy-on-write to efficiently share layers between containers.
-              </p>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+      {/* Info Alert */}
+      <Alert
+        color="primary"
+        variant="flat"
+        description="Overlay2 is Docker's default storage driver, managing filesystem layers for containers and images. It uses copy-on-write to efficiently share layers between containers."
+      />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="aspect-square">
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total Size</p>
-            </div>
-            <p className="text-lg font-bold">{formatSize(mockOverlay2Data.totalSize)}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Layers className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Layers</p>
-            </div>
-            <p className="text-lg font-bold">{mockOverlay2Data.totalLayers}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Database className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Active Layers</p>
-            </div>
-            <p className="text-lg font-bold">{mockOverlay2Data.activeLayers}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <AlertTriangle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Unused</p>
-            </div>
-            <p className="text-lg font-bold">{mockOverlay2Data.unusedLayers}</p>
-          </CardBody>
-        </Card>
-      </div>
+      <LayerBreakdown data={overlay2Data.layerBreakdown || { total: 0, used: 0, categories: [] }} />
 
       {/* Details Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Storage Efficiency */}
-        <Card>
+        <Card className='dark:bg-blue-400/5'>
           <CardHeader className="px-6 py-4">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-blue-500" />
@@ -149,21 +87,27 @@ export default function Overlay2() {
           <CardBody className="px-6 py-4 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Layer Sharing</span>
-              <Chip size="sm" color="success" variant="flat">Optimal</Chip>
+              <Chip size="sm" color="success" variant="flat">
+                {overlay2Data.storageEfficiency?.layerSharing || 'N/A'}
+              </Chip>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Deduplication</span>
-              <span className="text-sm font-medium">87%</span>
+              <span className="text-sm font-medium">
+                {overlay2Data.storageEfficiency?.deduplication || 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Compression Ratio</span>
-              <span className="text-sm font-medium">2.3:1</span>
+              <span className="text-sm font-medium">
+                {overlay2Data.storageEfficiency?.compressionRatio || 'N/A'}
+              </span>
             </div>
           </CardBody>
         </Card>
 
         {/* Layer Distribution */}
-        <Card>
+        <Card className='dark:bg-blue-400/5'>
           <CardHeader className="px-6 py-4">
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-purple-500" />
@@ -173,22 +117,28 @@ export default function Overlay2() {
           <CardBody className="px-6 py-4 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Image Layers</span>
-              <span className="text-sm font-medium">133</span>
+              <span className="text-sm font-medium">
+                {overlay2Data.layerDistribution?.imageLayers || 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Container Layers</span>
-              <span className="text-sm font-medium">23</span>
+              <span className="text-sm font-medium">
+                {overlay2Data.layerDistribution?.containerLayers || 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Base OS Layers</span>
-              <span className="text-sm font-medium">45</span>
+              <span className="text-sm font-medium">
+                {overlay2Data.layerDistribution?.baseOsLayers || 'N/A'}
+              </span>
             </div>
           </CardBody>
         </Card>
       </div>
 
       {/* System Information */}
-      <Card>
+      <Card className='dark:bg-blue-400/5'>
         <CardHeader className="px-6 py-4">
           <div className="flex items-center gap-2">
             <HardDrive className="w-5 h-5 text-orange-500" />
@@ -199,29 +149,35 @@ export default function Overlay2() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Storage Driver</p>
-              <p className="font-medium">overlay2</p>
+              <p className="font-medium">{overlay2Data.systemInfo?.storageDriver || 'N/A'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Backing Filesystem</p>
-              <p className="font-medium">ext4</p>
+              <p className="font-medium">{overlay2Data.systemInfo?.backingFilesystem || 'N/A'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Docker Root Dir</p>
               <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                /var/lib/docker
+                {overlay2Data.systemInfo?.dockerRootDir || 'N/A'}
               </code>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Supports d_type</p>
-              <Chip size="sm" color="success" variant="flat">Yes</Chip>
+              <Chip size="sm" color={overlay2Data.systemInfo?.supportsDType ? "success" : "default"} variant="flat">
+                {overlay2Data.systemInfo?.supportsDType ? "Yes" : "No"}
+              </Chip>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Native Overlay Diff</p>
-              <Chip size="sm" color="success" variant="flat">Yes</Chip>
+              <Chip size="sm" color={overlay2Data.systemInfo?.nativeOverlayDiff ? "success" : "default"} variant="flat">
+                {overlay2Data.systemInfo?.nativeOverlayDiff ? "Yes" : "No"}
+              </Chip>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">userxattr</p>
-              <Chip size="sm" color="default" variant="flat">Disabled</Chip>
+              <Chip size="sm" color={overlay2Data.systemInfo?.userxattr ? "success" : "default"} variant="flat">
+                {overlay2Data.systemInfo?.userxattr ? "Enabled" : "Disabled"}
+              </Chip>
             </div>
           </div>
         </CardBody>

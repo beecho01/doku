@@ -202,7 +202,7 @@ def test_docker_volume_list():
     assert list(x) == x.root
 
 
-def test_docker_build_cache():
+def test_docker_cache():
     x = DockerBuildCache.model_validate({
         'ID': 'abcdef123456',
         'Type': 'layer',

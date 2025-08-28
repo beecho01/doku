@@ -114,13 +114,13 @@ class DockerVolume(BaseModel):
 
     @property
     def size(self) -> int:
-        if 'Size' not in self.usage_data:
+        if not self.usage_data or 'Size' not in self.usage_data:
             return 0
         return self.usage_data['Size']
 
     @property
     def ref_count(self) -> int:
-        if 'RefCount' not in self.usage_data:
+        if not self.usage_data or 'RefCount' not in self.usage_data:
             return 0
         return self.usage_data['RefCount']
 
@@ -166,10 +166,10 @@ class DockerBuildCacheList(RootModel):
 
 
 class DockerSystemDF(BaseModel):
-    images: DockerImageList = Field(alias='Images', default_factory=list)
-    containers: DockerContainerList = Field(alias='Containers', default_factory=list)
-    volumes: DockerVolumeList = Field(alias='Volumes', default_factory=list)
-    build_cache: DockerBuildCacheList = Field(alias='BuildCache', default_factory=list)
+    images: DockerImageList = Field(alias='Images', default_factory=lambda: DockerImageList([]))
+    containers: DockerContainerList = Field(alias='Containers', default_factory=lambda: DockerContainerList([]))
+    volumes: DockerVolumeList = Field(alias='Volumes', default_factory=lambda: DockerVolumeList([]))
+    build_cache: DockerBuildCacheList = Field(alias='BuildCache', default_factory=lambda: DockerBuildCacheList([]))
 
 
 class DockerMount(BaseModel):

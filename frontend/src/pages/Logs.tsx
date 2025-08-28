@@ -1,119 +1,176 @@
-import { useQuery } from 'react-query'
+import { useState, useMemo } from "react";
+import { useQuery } from "react-query";
 import {
   Card,
   CardBody,
-  CardHeader,
-  Chip,
-  Spinner,
-  Button,
   Table,
   TableHeader,
   TableColumn,
   TableBody,
   TableRow,
   TableCell,
-  Input
-} from '@heroui/react'
-import { FileText, RefreshCw, Search, Container, Calendar, HardDrive, FolderOpen, AlertTriangle } from 'lucide-react'
-import { apiService } from '@/services/api'
-import type { LogInfo } from '@/types'
-import { useState, useMemo } from 'react'
+  Input,
+  Spinner,
+  Tabs,
+  Tab,
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  useDisclosure,
+} from "@heroui/react";
+import { Search, FileText, Eye } from "lucide-react";
+import { apiService } from "@/services/api";
+import type { ContainerLogs, LogInfo } from "@/types";
 
 export default function Logs() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'large' | 'recent'>('all')
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "running" | "stopped"
+  >("all");
+  const [sortDescriptor, setSortDescriptor] = useState<{
+    column: string;
+    direction: "ascending" | "descending";
+  }>({ column: "", direction: "ascending" });
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<LogInfo[]>(
-    'logs',
-    apiService.getLogs,
-    { refetchInterval: 30000 }
-  )
+  // Container logs functionality
+  const [selectedContainer, setSelectedContainer] = useState<string | null>(null);
+  const [containerLogs, setContainerLogs] = useState<ContainerLogs | null>(null);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const filteredLogs = useMemo(() => {
-    if (!data) return []
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery<LogInfo[]>("logs", apiService.getLogs, {
+    refetchInterval: 30000,
+  });
 
-    let filtered = data.filter(log =>
-      log.container_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.container_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.log_path.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-
-    // Apply size/time filter
-    if (activeFilter === 'large') {
-      filtered = filtered.filter(log => log.size > 100_000_000) // > 100MB
-    } else if (activeFilter === 'recent') {
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      filtered = filtered.filter(log => new Date(log.created) > oneDayAgo)
+  const viewContainerLogs = async (containerId: string, containerName: string) => {
+    setSelectedContainer(containerName);
+    setIsLoadingLogs(true);
+    try {
+      const logs = await apiService.getContainerLogs(containerId, 100);
+      setContainerLogs(logs);
+      onOpen();
+    } catch (error) {
+      console.error('Failed to fetch container logs:', error);
+    } finally {
+      setIsLoadingLogs(false);
     }
-
-    return filtered.sort((a, b) => b.size - a.size) // Sort by size descending
-  }, [data, searchQuery, activeFilter])
-
-  const formatSize = (bytes: number) => {
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    if (bytes === 0) return '0 B'
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInMs = now.getTime() - date.getTime()
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-    if (diffInHours < 1) return 'Less than 1 hour ago'
-    if (diffInHours < 24) return `${diffInHours} hours ago`
-    if (diffInDays === 1) return '1 day ago'
-    if (diffInDays < 7) return `${diffInDays} days ago`
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
-    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`
-    return `${Math.floor(diffInDays / 365)} years ago`
-  }
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  };
 
-  const getSizeChipColor = (size: number) => {
-    if (size > 200_000_000) return 'danger' // > 200MB
-    if (size > 100_000_000) return 'warning' // > 100MB
-    if (size > 50_000_000) return 'primary' // > 50MB
-    return 'default'
-  }
+  const filteredContainers = useMemo(() => {
+    if (!data) return [];
 
-  const totalSize = useMemo(() => {
-    if (!data) return 0
-    return data.reduce((acc, log) => acc + log.size, 0)
-  }, [data])
+    let filtered = data.filter((log) => {
+      const matchesSearch =
+        log.container_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.image.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
 
-  const largeLogs = useMemo(() => {
-    if (!data) return 0
-    return data.filter(log => log.size > 100_000_000).length
-  }, [data])
+    // Apply status filter - for logs, we'll show all since we don't have status
+    if (activeFilter === "running") {
+      filtered = filtered; // Show all logs for now
+    } else if (activeFilter === "stopped") {
+      filtered = filtered; // Show all logs for now
+    }
 
-  const recentLogs = useMemo(() => {
-    if (!data) return 0
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    return data.filter(log => new Date(log.created) > oneDayAgo).length
-  }, [data])
+    // Apply sorting
+    if (sortDescriptor.column) {
+      filtered = filtered.sort((a: LogInfo, b: LogInfo) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortDescriptor.column) {
+          case "name":
+            aValue = a.container_name.toLowerCase();
+            bValue = b.container_name.toLowerCase();
+            break;
+          case "image":
+            aValue = a.image.toLowerCase();
+            bValue = b.image.toLowerCase();
+            break;
+          case "size":
+            aValue = a.size;
+            bValue = b.size;
+            break;
+          case "created":
+            aValue = new Date(a.created).getTime();
+            bValue = new Date(b.created).getTime();
+            break;
+          default:
+            return 0;
+        }
+
+        if (sortDescriptor.direction === "ascending") {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+
+    return filtered;
+  }, [data, searchQuery, activeFilter, sortDescriptor]);
+
+  const summary = useMemo(() => {
+    if (!data) return { total: 0, running: 0, stopped: 0, totalSize: 0 };
+
+    return data.reduce(
+      (acc, log) => {
+        acc.total++;
+        acc.totalSize += log.size;
+        // For logs, we don't have running/stopped status, so we'll count all as "running"
+        acc.running++;
+        return acc;
+      },
+      { total: 0, running: 0, stopped: 0, totalSize: 0 }
+    );
+  }, [data]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <Spinner size="lg" />
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <Card className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
         <CardBody className="px-6 py-6">
-          <p className="text-red-600 dark:text-red-400">Failed to load logs data. Please try again.</p>
+          <p className="text-red-600 dark:text-red-400">
+            Failed to load container logs. Please try again.
+          </p>
         </CardBody>
       </Card>
-    )
+    );
   }
 
-  if (!data) return null
+  if (!data) return null;
 
   return (
     <div className="space-y-6 font-sans">
@@ -124,143 +181,89 @@ export default function Logs() {
             Container Logs
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Monitor and analyze Docker container log files
+            Monitor Docker container log files and their sizes
           </p>
         </div>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          onPress={() => refetch()}
-          isDisabled={isFetching}
-          variant="flat"
-        >
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'all' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('all')}
+      <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Tabs
+          aria-label="Filter Options"
+          selectedKey={activeFilter}
+          onSelectionChange={(key) => setActiveFilter(key as "all" | "running" | "stopped")}
+          variant="solid"
+          color="primary"
+          radius="full"
+          className="md:flex-shrink-0"
         >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total</p>
-            </div>
-            <p className="text-lg font-bold">{data.length}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'large' ? 'ring-2 ring-orange-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('large')}
-        >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <AlertTriangle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Large</p>
-            </div>
-            <p className="text-lg font-bold">{largeLogs}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'recent' ? 'ring-2 ring-green-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('recent')}
-        >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Calendar className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Recent</p>
-            </div>
-            <p className="text-lg font-bold">{recentLogs}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Size</p>
-            </div>
-            <p className="text-sm font-bold">{formatSize(totalSize)}</p>
-          </CardBody>
-        </Card>
+          <Tab key="all" title={`All Logs (${data.length})`}></Tab>
+          <Tab key="running" title={`All Logs (${summary.running})`}></Tab>
+          <Tab key="stopped" title={`All Logs (${summary.stopped})`}></Tab>
+        </Tabs>
+        <div className="flex md:justify-end md:flex-1">
+          <Input
+            placeholder="Search containers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<Search className="w-4 h-4 text-gray-400" />}
+            className="w-full md:max-w-sm"
+            variant="flat"
+            isClearable
+            onClear={() => setSearchQuery('')}
+          />
+        </div>
       </div>
 
-      {/* Logs Table */}
-      <Card className='p-4'>
-        <CardHeader className="p-0 pb-4 m-0 w-full flex">
-          <div className="flex flex-row items-center justify-between gap-4 w-full">
-            <Input
-              placeholder="Search logs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              startContent={<Search className="w-4 h-4 text-gray-400" />}
-              className="max-w-xs"
-              variant="flat"
-            />
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredLogs.length} of {data.length} logs
-            </div>
-          </div>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <Table aria-label="Container Logs table" removeWrapper>
+      {/* Containers Table */}
+      <Card className="p-0 bg-transparent border-0 border-blue-400/15 elevation-0 shadow-none">
+        <CardBody className="px-0 py-0 bg-blue-400/5 rounded-lg">
+          <Table
+            aria-label="Docker Containers table"
+            removeWrapper
+            sortDescriptor={sortDescriptor}
+            onSortChange={(descriptor: any) => setSortDescriptor(descriptor)}
+          >
             <TableHeader>
-              <TableColumn>CONTAINER</TableColumn>
-              <TableColumn>LOG FILE</TableColumn>
-              <TableColumn>SIZE</TableColumn>
-              <TableColumn>CREATED</TableColumn>
-              <TableColumn>CONTAINER ID</TableColumn>
+              <TableColumn key="name" allowsSorting>Container Name</TableColumn>
+              <TableColumn key="image" allowsSorting>Image</TableColumn>
+              <TableColumn key="size" allowsSorting>Log Size</TableColumn>
+              <TableColumn key="created" allowsSorting>Last Scan</TableColumn>
+              <TableColumn>Actions</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredLogs.map((log) => (
+              {filteredContainers.map((log) => (
                 <TableRow key={log.container_id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Container className="w-4 h-4 text-blue-500" />
-                      <div className="font-medium">{log.container_name}</div>
+                      <span className="font-medium">{log.container_name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="w-3 h-3 text-gray-400" />
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono max-w-xs truncate">
-                        {log.log_path.split('/').pop()}
-                      </code>
+                    <div className="font-mono text-sm text-gray-600 dark:text-gray-400">
+                      {log.image}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={getSizeChipColor(log.size)}
-                    >
-                      {formatSize(log.size)}
-                    </Chip>
+                    <div className="text-sm font-medium">
+                      {formatBytes(log.size)}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-3 h-3 text-gray-400" />
+                    <div className="text-sm">
                       {formatDate(log.created)}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                      {log.container_id.substring(0, 12)}
-                    </code>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      startContent={<Eye className="w-3 h-3" />}
+                      onClick={() => viewContainerLogs(log.container_id, log.container_name)}
+                      isLoading={isLoadingLogs && selectedContainer === log.container_name}
+                    >
+                      View Logs
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -268,6 +271,35 @@ export default function Logs() {
           </Table>
         </CardBody>
       </Card>
+
+      {/* Container Logs Modal */}
+      <Modal backdrop="blur" isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" placement="auto">
+        <ModalContent className="p-2">
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-500" />
+              <span>Container Logs - {selectedContainer}</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {containerLogs ? (
+              <div className="space-y-4 mb-4">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span>Lines requested: {containerLogs.lines_requested}</span>
+                  <span>Timestamp: {new Date(containerLogs.timestamp).toLocaleString()}</span>
+                </div>
+                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono whitespace-pre-wrap">
+                  {containerLogs.logs}
+                </pre>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <Spinner size="lg" />
+              </div>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </div>
-  )
+  );
 }

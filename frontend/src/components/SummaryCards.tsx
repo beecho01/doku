@@ -5,10 +5,10 @@ interface SummaryCardsProps {
     images: { count: number; size: number }
     containers: { count: number; size: number }
     volumes: { count: number; size: number }
-    build_cache: { count: number; size: number }
-    overlay2: { count: number; size: number }
-    logs: { count: number; size: number }
-    bind_mounts: { count: number; size: number }
+    cache: { count: number; size: number }
+    overlay2: { size: number }
+    logs: { size: number }
+    bind_mounts: { size: number }
   }
 }
 
@@ -24,56 +24,56 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
   const cards = [
     {
       title: 'Images',
-      count: data.images.count,
-      size: data.images.size,
+      count: data.images?.count ?? 0,
+      size: data.images?.size ?? 0,
       color: 'doku',
       colorVariant: '500',
       href: '/images'
     },
     {
       title: 'Containers',
-      count: data.containers.count,
-      size: data.containers.size,
+      count: data.containers?.count ?? 0,
+      size: data.containers?.size ?? 0,
       color: 'doku',
       colorVariant: '600',
       href: '/containers'
     },
     {
       title: 'Volumes',
-      count: data.volumes.count,
-      size: data.volumes.size,
+      count: data.volumes?.count ?? 0,
+      size: data.volumes?.size ?? 0,
       color: 'doku',
       colorVariant: '400',
       href: '/volumes'
     },
     {
       title: 'Build Cache',
-      count: data.build_cache.count,
-      size: data.build_cache.size,
+      count: data.cache?.count ?? 0,
+      size: data.cache?.size ?? 0,
       color: 'doku',
       colorVariant: '700',
-      href: '/build-cache'
+      href: '/cache'
     },
     {
       title: 'Overlay2',
-      count: data.overlay2.count,
-      size: data.overlay2.size,
+      count: 0, // Count not provided by backend
+      size: data.overlay2?.size ?? 0,
       color: 'doku',
       colorVariant: '300',
       href: '/overlay2'
     },
     {
       title: 'Container Logs',
-      count: data.logs.count,
-      size: data.logs.size,
+      count: 0, // Count not provided by backend
+      size: data.logs?.size ?? 0,
       color: 'doku',
       colorVariant: '800',
       href: '/logs'
     },
     {
       title: 'Bind Mounts',
-      count: data.bind_mounts.count,
-      size: data.bind_mounts.size,
+      count: 0, // Count not provided by backend
+      size: data.bind_mounts?.size ?? 0,
       color: 'doku',
       colorVariant: '200',
       href: '/bind-mounts'
@@ -81,7 +81,7 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
   ]
 
   return (
-    <div className="gap-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ">
+    <div className="gap-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 ">
       {cards.map((card) => {
         return (
           <Card
@@ -104,16 +104,14 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
             </CardHeader>
 
             <CardBody className="flex flex-col justify-end">
-              {card.count > 0 && (
-                <div className="text-left flex flex-row items-baseline gap-2">
-                  <p className="font-mono text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    {card.count.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    items
-                  </p>
-                </div>
-              )}
+              <div className="text-left flex flex-row items-baseline gap-2">
+                <p className="font-mono text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                  {card.count === 0 || !card.count ? '0' : card.count.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {card.count === 1 ? 'item' : 'items'}
+                </p>
+              </div>
             </CardBody>
           </Card>
         )

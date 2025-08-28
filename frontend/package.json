@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@heroui/react": "^2.4.20",
+    "@heroui/react": "^2.8.2",
+    "@heroui/table": "^2.2.24",
     "axios": "^1.6.8",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.2",

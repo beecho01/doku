@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react'
-import { useQuery } from 'react-query'
+import { useState, useMemo } from "react";
+import { useQuery } from "react-query";
 import {
   Card,
   CardBody,
-  CardHeader,
   Table,
   TableHeader,
   TableColumn,
@@ -13,229 +12,276 @@ import {
   Chip,
   Input,
   Spinner,
-  Button
-} from '@heroui/react'
-import { Container, Search, RefreshCw } from 'lucide-react'
-import { apiService } from '@/services/api'
-import type { ContainerInfo } from '@/types'
+  Tabs,
+  Tab,
+} from "@heroui/react";
+import { Search } from "lucide-react";
+import { apiService } from "@/services/api";
+import type { ContainerInfo } from "@/types";
 
 export default function Containers() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'stopped'>('all')
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "running" | "stopped"
+  >("all");
+  const [sortDescriptor, setSortDescriptor] = useState<{
+    column: string;
+    direction: "ascending" | "descending";
+  }>({ column: "", direction: "ascending" });
 
-  const { data: containers, isLoading, error, refetch, isFetching } = useQuery<ContainerInfo[]>(
-    'containers',
-    apiService.getContainers,
-    { refetchInterval: 30000 }
-  )
-
-  const formatBytes = (bytes: number) => {
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    if (bytes === 0) return '0 B'
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
-  }
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery<ContainerInfo[]>("containers", apiService.getContainers, {
+    refetchInterval: 30000,
+  });
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  };
 
   const filteredContainers = useMemo(() => {
-    if (!containers) return []
+    if (!data) return [];
 
-    return containers.filter(container => {
-      const matchesSearch = container.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           container.image.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'all' || container.status === statusFilter
+    let filtered = data.filter((container) => {
+      const matchesSearch =
+        container.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        container.image.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
 
-      return matchesSearch && matchesStatus
-    })
-  }, [containers, searchQuery, statusFilter])
+    // Apply status filter
+    if (activeFilter === "running") {
+      filtered = filtered.filter((container) => container.status === "running");
+    } else if (activeFilter === "stopped") {
+      filtered = filtered.filter((container) => container.status !== "running");
+    }
+
+    // Apply sorting
+    if (sortDescriptor.column) {
+      filtered = filtered.sort((a: ContainerInfo, b: ContainerInfo) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortDescriptor.column) {
+          case "name":
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+            break;
+          case "image":
+            aValue = a.image.toLowerCase();
+            bValue = b.image.toLowerCase();
+            break;
+          case "status":
+            aValue = a.status.toLowerCase();
+            bValue = b.status.toLowerCase();
+            break;
+          case "created":
+            aValue = new Date(a.created).getTime();
+            bValue = new Date(b.created).getTime();
+            break;
+          case "size":
+            aValue = a.size;
+            bValue = b.size;
+            break;
+          default:
+            return 0;
+        }
+
+        if (sortDescriptor.direction === "ascending") {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+
+    return filtered;
+  }, [data, searchQuery, activeFilter, sortDescriptor]);
 
   const summary = useMemo(() => {
-    if (!containers) return { total: 0, running: 0, stopped: 0, totalSize: 0 }
+    if (!data) return { total: 0, running: 0, stopped: 0, totalSize: 0 };
 
-    return containers.reduce((acc, container) => {
-      acc.total++
-      acc.totalSize += container.size
-      if (container.status === 'running') acc.running++
-      else acc.stopped++
-      return acc
-    }, { total: 0, running: 0, stopped: 0, totalSize: 0 })
-  }, [containers])
+    return data.reduce(
+      (acc, container) => {
+        acc.total++;
+        acc.totalSize += container.size;
+        if (container.status === "running") acc.running++;
+        else acc.stopped++;
+        return acc;
+      },
+      { total: 0, running: 0, stopped: 0, totalSize: 0 }
+    );
+  }, [data]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <Spinner size="lg" />
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <Card className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
         <CardBody className="px-6 py-6">
-          <p className="text-red-600 dark:text-red-400">Failed to load containers. Please try again.</p>
+          <p className="text-red-600 dark:text-red-400">
+            Failed to load containers. Please try again.
+          </p>
         </CardBody>
       </Card>
-    )
+    );
   }
 
+  if (!data) return null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Docker Containers
+            Containers
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Manage and monitor your Docker containers
           </p>
         </div>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          onPress={() => refetch()}
-          isDisabled={isFetching}
-          variant="flat"
-        >
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            statusFilter === 'all' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setStatusFilter('all')}
+      <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Tabs
+          aria-label="Filter Options"
+          selectedKey={activeFilter}
+          onSelectionChange={(key) => setActiveFilter(key as "all" | "running" | "stopped")}
+          variant="solid"
+          color="primary"
+          radius="full"
+          className="md:flex-shrink-0"
         >
-          <CardBody className="p-3 bg-blue-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total</p>
-            </div>
-            <p className="text-lg font-bold">{summary.total}</p>
-          </CardBody>
-        </Card>
-
-        {/* Running */}
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            statusFilter === 'running' ? 'ring-2 ring-green-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setStatusFilter('running')}
-        >
-          <CardBody className="p-2 bg-green-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">Running</p>
-            </div>
-            <p className="text-lg font-bold">{summary.running}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            statusFilter === 'stopped' ? 'ring-2 ring-red-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setStatusFilter('stopped')}
-        >
-          <CardBody className="p-2 bg-red-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Stopped</p>
-            </div>
-            <p className="text-lg font-bold">{summary.stopped}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-2 bg-purple-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total Size</p>
-            </div>
-            <p className="text-lg font-bold">{formatBytes(summary.totalSize)}</p>
-          </CardBody>
-        </Card>
+          <Tab key="all" title={`All (${data.length})`}></Tab>
+          <Tab key="running" title={`Running (${summary.running})`}></Tab>
+          <Tab key="stopped" title={`Stopped (${summary.stopped})`}></Tab>
+        </Tabs>
+        <div className="flex md:justify-end md:flex-1">
+          <Input
+            placeholder="Search containers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<Search className="w-4 h-4 text-gray-400" />}
+            className="w-full md:max-w-sm"
+            variant="flat"
+            isClearable
+            onClear={() => setSearchQuery('')}
+          />
+        </div>
       </div>
 
       {/* Containers Table */}
-      <Card className='p-4'>
-        <CardHeader className="p-0 pb-4 m-0 w-full flex">
-          <div className="flex flex-row items-center justify-between gap-4 w-full">
-            <Input
-              placeholder="Search containers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              startContent={<Search className="w-4 h-4 text-gray-400" />}
-              className="max-w-xs"
-              variant="flat"
-            />
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredContainers.length} of {containers?.length || 0} containers
-            </div>
-          </div>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <Table aria-label="Docker Containers table" removeWrapper>
+      <Card className="p-0 bg-transparent border-0 border-blue-400/15 elevation-0 shadow-none">
+        <CardBody className="px-0 py-0 bg-blue-400/5 rounded-lg">
+          <Table
+            aria-label="Docker Containers table"
+            removeWrapper
+            sortDescriptor={sortDescriptor}
+            onSortChange={(descriptor: any) => setSortDescriptor(descriptor)}
+          >
             <TableHeader>
-              <TableColumn>NAME</TableColumn>
-              <TableColumn>IMAGE</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>CREATED</TableColumn>
-              <TableColumn>SIZE</TableColumn>
-              <TableColumn>PORTS</TableColumn>
+              <TableColumn key="name" allowsSorting>Name</TableColumn>
+              <TableColumn key="image" allowsSorting>Image</TableColumn>
+              <TableColumn key="status" allowsSorting>Status</TableColumn>
+              <TableColumn key="created" allowsSorting>Created</TableColumn>
+              <TableColumn key="size" allowsSorting>Size</TableColumn>
+              <TableColumn>Ports</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="No containers found">
+            <TableBody>
               {filteredContainers.map((container) => (
                 <TableRow key={container.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Container className="w-4 h-4 text-gray-400" />
-                      <span className="font-mono text-sm">{container.name}</span>
+                      <span className="font-medium">{container.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="font-mono text-sm text-gray-600 dark:text-gray-400">
                       {container.image}
-                    </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Chip
-                      color={container.status === 'running' ? 'success' : 'default'}
                       size="sm"
                       variant="flat"
+                      color={
+                        container.status === "running" ? "success" : "default"
+                      }
                     >
                       {container.status}
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm">
                       {formatDate(container.created)}
-                    </span>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-sm">
+                    <div className="text-sm font-medium">
                       {formatBytes(container.size)}
-                    </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {container.ports.map((port, index) => (
-                        <Chip key={index} size="sm" variant="flat" color="primary">
-                          {port}
-                        </Chip>
-                      ))}
+                      {container.ports
+                        .filter(port => !port.startsWith(':::')) // Filter out IPv6 mappings
+                        .map((port, index) => {
+                          // Parse port mapping to extract host port
+                          const portMatch = port.match(/^(\d+)->/);
+                          const hostPort = portMatch ? portMatch[1] : null;
+                          const url = hostPort ? `http://localhost:${hostPort}` : null;
+
+                          return url ? (
+                            <Chip
+                              key={index}
+                              size="sm"
+                              variant="flat"
+                              color="primary"
+                              as="a"
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="cursor-pointer hover:bg-primary-600"
+                            >
+                              {port}
+                            </Chip>
+                          ) : (
+                            <Chip
+                              key={index}
+                              size="sm"
+                              variant="flat"
+                              color="primary"
+                            >
+                              {port}
+                            </Chip>
+                          );
+                        })}
+                      {container.ports.filter(port => !port.startsWith(':::')).length === 0 && (
+                        <span className="text-xs text-gray-500">No ports</span>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -245,5 +291,5 @@ export default function Containers() {
         </CardBody>
       </Card>
     </div>
-  )
+  );
 }

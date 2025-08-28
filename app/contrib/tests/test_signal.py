@@ -5,6 +5,6 @@ from contrib.signal import SignalHandler
 
 def test_signal_handler():
     handler = SignalHandler()
-    handler.is_stop() is False
+    handler.is_stop() is False # pyright: ignore[reportUnusedExpression]
     handler.handler(signal.SIGINT, None)
-    handler.is_stop() is True
+    handler.is_stop() is True # pyright: ignore[reportUnusedExpression]

@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Images from './pages/Images'
 import Containers from './pages/Containers'
 import Volumes from './pages/Volumes'
-import BuildCache from './pages/BuildCache'
+import Cache from './pages/Cache'
 import Overlay2 from './pages/Overlay2'
 import Logs from './pages/Logs'
 import BindMounts from './pages/BindMounts'
@@ -20,7 +20,7 @@ function App() {
           <Route path="/images" element={<Images />} />
           <Route path="/containers" element={<Containers />} />
           <Route path="/volumes" element={<Volumes />} />
-          <Route path="/build-cache" element={<BuildCache />} />
+          <Route path="/cache" element={<Cache />} />
           <Route path="/overlay2" element={<Overlay2 />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/bind-mounts" element={<BindMounts />} />

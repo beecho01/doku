@@ -2,30 +2,34 @@ import { useQuery } from 'react-query'
 import {
   Card,
   CardBody,
-  CardHeader,
   Chip,
   Spinner,
-  Button,
   Table,
   TableHeader,
   TableColumn,
   TableBody,
   TableRow,
   TableCell,
-  Input
+  Input,
+  Tabs,
+  Tab,
 } from '@heroui/react'
-import { Archive, RefreshCw, Search, Calendar, HardDrive, Activity, Layers } from 'lucide-react'
+import { Search, Activity } from 'lucide-react'
 import { apiService } from '@/services/api'
-import type { BuildCacheInfo } from '@/types'
+import type { CacheInfo } from '@/types'
 import { useState, useMemo } from 'react'
 
-export default function BuildCache() {
+export default function Cache() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'recent' | 'large' | 'frequent'>('all')
+  const [sortDescriptor, setSortDescriptor] = useState<{
+    column: string;
+    direction: "ascending" | "descending";
+  }>({ column: "", direction: "ascending" });
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<BuildCacheInfo[]>(
+  const { data, isLoading, error } = useQuery<CacheInfo[]>(
     'build-cache',
-    apiService.getBuildCache,
+    apiService.getCache,
     { refetchInterval: 30000 }
   )
 
@@ -47,8 +51,54 @@ export default function BuildCache() {
       filtered = filtered.filter(cache => cache.usage_count > 10)
     }
 
-    return filtered.sort((a, b) => b.size - a.size)
-  }, [data, searchQuery, activeFilter])
+    // Apply sorting
+    if (sortDescriptor.column) {
+      filtered = filtered.sort((a: CacheInfo, b: CacheInfo) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortDescriptor.column) {
+          case "id":
+            aValue = a.id.toLowerCase();
+            bValue = b.id.toLowerCase();
+            break;
+          case "type":
+            aValue = a.type.toLowerCase();
+            bValue = b.type.toLowerCase();
+            break;
+          case "size":
+            aValue = a.size;
+            bValue = b.size;
+            break;
+          case "usage_count":
+            aValue = a.usage_count;
+            bValue = b.usage_count;
+            break;
+          case "created":
+            aValue = new Date(a.created).getTime();
+            bValue = new Date(b.created).getTime();
+            break;
+          case "last_used":
+            aValue = new Date(a.last_used).getTime();
+            bValue = new Date(b.last_used).getTime();
+            break;
+          default:
+            return 0;
+        }
+
+        if (sortDescriptor.direction === "ascending") {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    } else {
+      // Default sort by size descending
+      filtered = filtered.sort((a, b) => b.size - a.size);
+    }
+
+    return filtered
+  }, [data, searchQuery, activeFilter, sortDescriptor])
 
   const formatSize = (bytes: number) => {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -89,20 +139,10 @@ export default function BuildCache() {
     return 'default'
   }
 
-  const totalSize = useMemo(() => {
-    if (!data) return 0
-    return data.reduce((acc, cache) => acc + cache.size, 0)
-  }, [data])
-
   const recentCache = useMemo(() => {
     if (!data) return 0
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
     return data.filter(cache => new Date(cache.last_used) > oneDayAgo).length
-  }, [data])
-
-  const largeCache = useMemo(() => {
-    if (!data) return 0
-    return data.filter(cache => cache.size > 1_000_000_000).length
   }, [data])
 
   const frequentCache = useMemo(() => {
@@ -130,129 +170,72 @@ export default function BuildCache() {
 
   if (!data) return null
 
+  if (!data) return null
+
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Build Cache
+            Cache
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Monitor and manage Docker build cache layers
+            Monitor and manage Docker cache layers
           </p>
         </div>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          onPress={() => refetch()}
-          isDisabled={isFetching}
-          variant="flat"
-        >
-          {isFetching ? 'Refreshing' : 'Refresh'}
-        </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'all' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('all')}
+      <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Tabs
+          aria-label="Filter Options"
+          selectedKey={activeFilter}
+          onSelectionChange={(key) => setActiveFilter(key as "all" | "recent" | "large" | "frequent")}
+          variant="solid"
+          color="primary"
+          radius="full"
+          className="md:flex-shrink-0"
         >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Archive className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Total</p>
-            </div>
-            <p className="text-lg font-bold">{data.length}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'recent' ? 'ring-2 ring-green-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('recent')}
-        >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Calendar className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Recent</p>
-            </div>
-            <p className="text-lg font-bold">{recentCache}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'large' ? 'ring-2 ring-orange-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('large')}
-        >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <HardDrive className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Large</p>
-            </div>
-            <p className="text-lg font-bold">{largeCache}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === 'frequent' ? 'ring-2 ring-purple-500 shadow-lg' : ''
-          }`}
-          isPressable
-          onPress={() => setActiveFilter('frequent')}
-        >
-          <CardBody className="p-3 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <Activity className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Active</p>
-            </div>
-            <p className="text-lg font-bold">{frequentCache}</p>
-          </CardBody>
-        </Card>
+          <Tab key="all" title={`All (${data.length})`}></Tab>
+          <Tab key="recent" title={`Recent (${recentCache})`}></Tab>
+          <Tab key="frequent" title={`Active (${frequentCache})`}></Tab>
+        </Tabs>
+        <div className="flex md:justify-end md:flex-1">
+          <Input
+            placeholder="Search cache..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<Search className="w-4 h-4 text-gray-400" />}
+            className="w-full md:max-w-sm"
+            variant="flat"
+            isClearable
+            onClear={() => setSearchQuery('')}
+          />
+        </div>
       </div>
 
       {/* Build Cache Table */}
-      <Card className='p-4'>
-        <CardHeader className="p-0 pb-4 m-0 w-full flex">
-          <div className="flex flex-row items-center justify-between gap-4 w-full">
-            <Input
-              placeholder="Search cache..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              startContent={<Search className="w-4 h-4 text-gray-400" />}
-              className="max-w-xs"
-              variant="flat"
-            />
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredCache.length} of {data.length} cache entries
-            </div>
-          </div>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <Table aria-label="Build Cache table" removeWrapper>
+      <Card className="p-0 bg-transparent border-0 border-blue-400/15 elevation-0 shadow-none">
+        <CardBody className="px-0 py-0 bg-blue-400/5 rounded-lg">
+          <Table
+            aria-label="Build Cache table"
+            removeWrapper
+            sortDescriptor={sortDescriptor}
+            onSortChange={(descriptor: any) => setSortDescriptor(descriptor)}
+          >
             <TableHeader>
-              <TableColumn>CACHE ID</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn>SIZE</TableColumn>
-              <TableColumn>USAGE COUNT</TableColumn>
-              <TableColumn>CREATED</TableColumn>
-              <TableColumn>LAST USED</TableColumn>
+              <TableColumn key="id" allowsSorting>Cache ID</TableColumn>
+              <TableColumn key="type" allowsSorting>Type</TableColumn>
+              <TableColumn key="size" allowsSorting>Size</TableColumn>
+              <TableColumn key="usage_count" allowsSorting>Usage Count</TableColumn>
+              <TableColumn key="created" allowsSorting>Created</TableColumn>
+              <TableColumn key="last_used" allowsSorting>Last Used</TableColumn>
             </TableHeader>
             <TableBody>
               {filteredCache.map((cache) => (
                 <TableRow key={cache.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-blue-500" />
                       <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
                         {cache.id.substring(0, 12)}
                       </code>
@@ -264,21 +247,20 @@ export default function BuildCache() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{formatSize(cache.size)}</div>
+                    <div className="text-sm font-medium">{formatSize(cache.size)}</div>
                   </TableCell>
                   <TableCell>
                     <Chip
                       size="sm"
                       variant="flat"
                       color={getUsageColor(cache.usage_count)}
-                      startContent={<Activity className="w-3 h-3" />}
+                      startContent={<Activity className="w-3 h-3 m-1" />}
                     >
                       {cache.usage_count}
                     </Chip>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-3 h-3 text-gray-400" />
                       {formatDate(cache.created)}
                     </div>
                   </TableCell>

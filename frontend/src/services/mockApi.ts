@@ -3,9 +3,11 @@ import type {
   ContainerInfo,
   ImageInfo,
   VolumeInfo,
+  CacheInfo,
   BuildCacheInfo,
   LogInfo,
-  BindMountInfo
+  BindMountInfo,
+  Overlay2Data
 } from '../types'
 
 // Mock data for development
@@ -32,10 +34,10 @@ const mockDashboardData: DashboardData = {
     images: { count: 12, size: 15_285_000_000 }, // 15.3 GB (calculated from 12 images)
     containers: { count: 3, size: 4_450_000_000 }, // 4.5 GB (calculated from 3 containers)
     volumes: { count: 8, size: 49_075_125_000 }, // 49.1 GB (calculated from 8 volumes)
-    build_cache: { count: 6, size: 8_450_000_000 }, // 8.5 GB (calculated from 6 cache entries)
-    overlay2: { count: 156, size: 2_100_000_000 }, // 2.1 GB (156 total storage layers)
-    logs: { count: 8, size: 1_155_000_000 }, // 1.2 GB (calculated from 8 log entries)
-    bind_mounts: { count: 7, size: 3_225_000_000 } // 3.2 GB (calculated from 7 bind mounts)
+    cache: { count: 6, size: 8_450_000_000 }, // 8.5 GB (calculated from 6 cache entries)
+    overlay2: { size: 2_100_000_000 }, // 2.1 GB (156 total storage layers)
+    logs: { size: 1_155_000_000 }, // 1.2 GB (calculated from 8 log entries)
+    bind_mounts: { size: 3_225_000_000 } // 3.2 GB (calculated from 7 bind mounts)
   }
 }
 
@@ -302,6 +304,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "c1a2b3c4d5e6",
     container_name: "nginx-web",
+    image: "nginx:latest",
     log_path: "/var/lib/docker/containers/c1a2b3c4d5e6/c1a2b3c4d5e6-json.log",
     size: 45_000_000,
     created: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -309,6 +312,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "f7g8h9i0j1k2",
     container_name: "postgres-db",
+    image: "postgres:13",
     log_path: "/var/lib/docker/containers/f7g8h9i0j1k2/f7g8h9i0j1k2-json.log",
     size: 125_000_000,
     created: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
@@ -316,6 +320,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "l3m4n5o6p7q8",
     container_name: "redis-cache",
+    image: "redis:7-alpine",
     log_path: "/var/lib/docker/containers/l3m4n5o6p7q8/l3m4n5o6p7q8-json.log",
     size: 15_000_000,
     created: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
@@ -323,6 +328,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "n9o0p1q2r3s4",
     container_name: "api-server",
+    image: "node:18-alpine",
     log_path: "/var/lib/docker/containers/n9o0p1q2r3s4/n9o0p1q2r3s4-json.log",
     size: 85_000_000,
     created: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
@@ -330,6 +336,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "t5u6v7w8x9y0",
     container_name: "mongo-db",
+    image: "mongo:5.0",
     log_path: "/var/lib/docker/containers/t5u6v7w8x9y0/t5u6v7w8x9y0-json.log",
     size: 200_000_000,
     created: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
@@ -337,6 +344,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "z1a2b3c4d5e6",
     container_name: "frontend-dev",
+    image: "node:16",
     log_path: "/var/lib/docker/containers/z1a2b3c4d5e6/z1a2b3c4d5e6-json.log",
     size: 35_000_000,
     created: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
@@ -344,6 +352,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "f7g8h9i0j1k3",
     container_name: "worker-queue",
+    image: "python:3.9-slim",
     log_path: "/var/lib/docker/containers/f7g8h9i0j1k3/f7g8h9i0j1k3-json.log",
     size: 150_000_000,
     created: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
@@ -351,6 +360,7 @@ const mockLogs: LogInfo[] = [
   {
     container_id: "m5n6o7p8q9r0",
     container_name: "elasticsearch",
+    image: "elasticsearch:8.5.0",
     log_path: "/var/lib/docker/containers/m5n6o7p8q9r0/m5n6o7p8q9r0-json.log",
     size: 500_000_000,
     created: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString()
@@ -443,6 +453,12 @@ export const mockApiService = {
     return mockBuildCache
   },
 
+  // Cache (alias for build cache)
+  getCache: async (): Promise<CacheInfo[]> => {
+    await delay(Math.random() * 800 + 300)
+    return mockBuildCache
+  },
+
   // Container logs
   getLogs: async (): Promise<LogInfo[]> => {
     await delay(Math.random() * 800 + 300)
@@ -456,9 +472,37 @@ export const mockApiService = {
   },
 
   // Overlay2 data
-  getOverlay2: async (): Promise<any[]> => {
+  getOverlay2: async (): Promise<Overlay2Data> => {
     await delay(Math.random() * 800 + 300)
-    return []
+    return {
+      layerBreakdown: {
+        total: 100,
+        used: 75,
+        categories: [
+          { name: "Base Images", size: 25, color: "primary" },
+          { name: "Application Layers", size: 30, color: "secondary" },
+          { name: "Data Layers", size: 20, color: "success" }
+        ]
+      },
+      storageEfficiency: {
+        layerSharing: "85%",
+        deduplication: "3.2x",
+        compressionRatio: "1.8x"
+      },
+      layerDistribution: {
+        imageLayers: 45,
+        containerLayers: 32,
+        baseOsLayers: 12
+      },
+      systemInfo: {
+        storageDriver: "overlay2",
+        backingFilesystem: "ext4",
+        dockerRootDir: "/var/lib/docker",
+        supportsDType: true,
+        nativeOverlayDiff: true,
+        userxattr: false
+      }
+    }
   },
 
   // Trigger scan
@@ -468,4 +512,159 @@ export const mockApiService = {
     mockDashboardData.scan_status.last_scan_time = new Date().toISOString()
     mockDashboardData.scan_status.scan_duration = Math.random() * 15000 + 5000
   },
+
+  // Container logs (real-time from Docker API)
+  getContainerLogs: async (containerId: string, lines: number = 100): Promise<any> => {
+    await delay(Math.random() * 1000 + 500)
+
+    // Generate mock log data
+    const mockLogs = Array.from({ length: Math.min(lines, 50) }, (_, i) => {
+      const timestamp = new Date(Date.now() - (lines - i) * 60000).toISOString()
+      return `${timestamp} container ${containerId} Log entry ${i + 1}: This is a mock log message`
+    }).join('\n')
+
+    return {
+      container_id: containerId,
+      container_name: `mock-container-${containerId.substring(0, 12)}`,
+      logs: mockLogs,
+      lines_requested: lines,
+      timestamp: new Date().toISOString()
+    }
+  },
+
+  // System information
+  getSystemInfo: async (): Promise<any> => {
+    await delay(Math.random() * 800 + 300)
+    return {
+      ID: "mock-docker-id",
+      Containers: 8,
+      ContainersRunning: 5,
+      ContainersPaused: 0,
+      ContainersStopped: 3,
+      Images: 12,
+      Driver: "overlay2",
+      DriverStatus: [["Backing Filesystem", "extfs"]],
+      DockerRootDir: "/var/lib/docker",
+      Plugins: {
+        Volume: ["local"],
+        Network: ["bridge", "host", "overlay", "macvlan", "null", "ipvlan"]
+      },
+      MemoryLimit: true,
+      SwapLimit: true,
+      KernelMemory: true,
+      CpuCfsPeriod: true,
+      CpuCfsQuota: true,
+      CPUShares: true,
+      CPUSet: true,
+      PidsLimit: true,
+      OomKillDisable: true,
+      IPv4Forwarding: true,
+      BridgeNfIptables: true,
+      BridgeNfIp6tables: true,
+      Debug: false,
+      NFd: 24,
+      NGoroutines: 35,
+      SystemTime: new Date().toISOString(),
+      LoggingDriver: "json-file",
+      CgroupDriver: "cgroupfs",
+      NEventsListener: 0,
+      KernelVersion: "5.15.0-91-generic",
+      OperatingSystem: "Ubuntu 22.04.3 LTS",
+      OSType: "linux",
+      Architecture: "x86_64",
+      NCPU: 4,
+      MemTotal: 8_589_934_592, // 8GB
+      GenericResources: null,
+      HttpProxy: "",
+      HttpsProxy: "",
+      NoProxy: "",
+      Name: "mock-docker-host",
+      Labels: [],
+      ExperimentalBuild: false,
+      ServerVersion: "24.0.7",
+      Runtimes: {
+        "runc": {
+          path: "runc"
+        },
+        "io.containerd.runc.v2": {
+          path: "runc"
+        },
+        "io.containerd.runtime.v1.linux": {
+          path: "runc"
+        }
+      },
+      DefaultRuntime: "runc",
+      Swarm: {
+        LocalNodeState: "inactive"
+      },
+      LiveRestoreEnabled: false,
+      Isolation: "",
+      InitBinary: "docker-init",
+      ContainerdCommit: {
+        ID: "mock-containerd-commit",
+        Expected: "mock-containerd-commit"
+      },
+      RuncCommit: {
+        ID: "mock-runc-commit",
+        Expected: "mock-runc-commit"
+      },
+      InitCommit: {
+        ID: "mock-init-commit",
+        Expected: "mock-init-commit"
+      },
+      SecurityOptions: ["name=seccomp,profile=default"],
+      ProductLicense: "Community Engine",
+      DefaultAddressPools: [
+        {
+          Base: "172.17.0.0/12",
+          Size: 16
+        }
+      ],
+      Warnings: []
+    }
+  },
+
+  // Docker daemon ping
+  pingDocker: async (): Promise<any> => {
+    await delay(Math.random() * 200 + 100)
+    return {
+      status: "ok",
+      message: "Docker daemon is responding"
+    }
+  },
+
+  // Docker authentication check
+  checkAuth: async (): Promise<any> => {
+    await delay(Math.random() * 300 + 200)
+    return {
+      Status: "Login Succeeded"
+    }
+  },
+
+  // Docker events
+  getEvents: async (): Promise<any[]> => {
+    await delay(Math.random() * 800 + 300)
+
+    const events: any[] = []
+    const eventTypes = ['container', 'image', 'volume', 'network']
+    const actions = ['create', 'start', 'stop', 'destroy', 'pull', 'push']
+
+    for (let i = 0; i < 20; i++) {
+      events.push({
+        Type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+        Action: actions[Math.floor(Math.random() * actions.length)],
+        Actor: {
+          ID: `mock-id-${i}`,
+          Attributes: {
+            name: `mock-resource-${i}`,
+            image: `mock-image-${i}:latest`
+          }
+        },
+        time: Math.floor(Date.now() / 1000) - (i * 60),
+        timeNano: (Math.floor(Date.now() / 1000) - (i * 60)) * 1_000_000_000
+      })
+    }
+
+    return events
+  }
 }
