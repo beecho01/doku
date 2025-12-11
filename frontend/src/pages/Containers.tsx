@@ -211,81 +211,91 @@ export default function Containers() {
               <TableColumn>Ports</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredContainers.map((container) => (
-                <TableRow key={container.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{container.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-mono text-sm text-gray-600 dark:text-gray-400">
-                      {container.image}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={
-                        container.status === "running" ? "success" : "default"
-                      }
-                    >
-                      {container.status}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {formatDate(container.created)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">
-                      {formatBytes(container.size)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {container.ports
-                        .filter(port => !port.startsWith(':::')) // Filter out IPv6 mappings
-                        .map((port, index) => {
-                          // Parse port mapping to extract host port
-                          const portMatch = port.match(/^(\d+)->/);
-                          const hostPort = portMatch ? portMatch[1] : null;
-                          const url = hostPort ? `http://localhost:${hostPort}` : null;
-
-                          return url ? (
-                            <Chip
-                              key={index}
-                              size="sm"
-                              variant="flat"
-                              color="primary"
-                              as="a"
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="cursor-pointer hover:bg-primary-600"
-                            >
-                              {port}
-                            </Chip>
-                          ) : (
-                            <Chip
-                              key={index}
-                              size="sm"
-                              variant="flat"
-                              color="primary"
-                            >
-                              {port}
-                            </Chip>
-                          );
-                        })}
-                      {container.ports.filter(port => !port.startsWith(':::')).length === 0 && (
-                        <span className="text-xs text-gray-500">No ports</span>
-                      )}
+              {filteredContainers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-gray-500">No containers to display</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredContainers.map((container) => (
+                  <TableRow key={container.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{container.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono text-sm text-gray-600 dark:text-gray-400">
+                        {container.image}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={
+                          container.status === "running" ? "success" : "default"
+                        }
+                      >
+                        {container.status}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {formatDate(container.created)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">
+                        {formatBytes(container.size)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {container.ports
+                          .filter(port => !port.startsWith(':::')) // Filter out IPv6 mappings
+                          .map((port, index) => {
+                            // Parse port mapping to extract host port
+                            const portMatch = port.match(/^(\d+)->/);
+                            const hostPort = portMatch ? portMatch[1] : null;
+                            const url = hostPort ? `http://localhost:${hostPort}` : null;
+
+                            return url ? (
+                              <Chip
+                                key={index}
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                                as="a"
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="cursor-pointer hover:bg-primary-600"
+                              >
+                                {port}
+                              </Chip>
+                            ) : (
+                              <Chip
+                                key={index}
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                              >
+                                {port}
+                              </Chip>
+                            );
+                          })}
+                        {container.ports.filter(port => !port.startsWith(':::')).length === 0 && (
+                          <span className="text-xs text-gray-500">No ports</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardBody>

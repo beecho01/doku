@@ -7,7 +7,6 @@ import {
   Spinner,
   Alert
 } from '@heroui/react'
-import { Layers, HardDrive, Database } from 'lucide-react'
 import { apiService } from '@/services/api'
 import LayerBreakdown from '@/components/LayerBreakdown'
 import type { Overlay2Data } from '@/types'
@@ -80,7 +79,6 @@ export default function Overlay2() {
         <Card className='dark:bg-blue-400/5'>
           <CardHeader className="px-6 py-4">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-blue-500" />
               <h2 className="text-lg font-semibold">Storage Efficiency</h2>
             </div>
           </CardHeader>
@@ -110,7 +108,6 @@ export default function Overlay2() {
         <Card className='dark:bg-blue-400/5'>
           <CardHeader className="px-6 py-4">
             <div className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-purple-500" />
               <h2 className="text-lg font-semibold">Layer Distribution</h2>
             </div>
           </CardHeader>
@@ -141,40 +138,39 @@ export default function Overlay2() {
       <Card className='dark:bg-blue-400/5'>
         <CardHeader className="px-6 py-4">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-5 h-5 text-orange-500" />
             <h2 className="text-lg font-semibold">System Information</h2>
           </div>
         </CardHeader>
         <CardBody className="px-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Storage Driver</p>
-              <p className="font-medium">{overlay2Data.systemInfo?.storageDriver || 'N/A'}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">Storage Driver</span>
+              <span className="font-medium">{overlay2Data.systemInfo?.storageDriver || 'N/A'}</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Backing Filesystem</p>
-              <p className="font-medium">{overlay2Data.systemInfo?.backingFilesystem || 'N/A'}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">Backing Filesystem</span>
+              <span className="font-medium">{overlay2Data.systemInfo?.backingFilesystem || 'N/A'}</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Docker Root Dir</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">Docker Root Dir</span>
               <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
                 {overlay2Data.systemInfo?.dockerRootDir || 'N/A'}
               </code>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Supports d_type</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">Supports d_type</span>
               <Chip size="sm" color={overlay2Data.systemInfo?.supportsDType ? "success" : "default"} variant="flat">
                 {overlay2Data.systemInfo?.supportsDType ? "Yes" : "No"}
               </Chip>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Native Overlay Diff</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">Native Overlay Diff</span>
               <Chip size="sm" color={overlay2Data.systemInfo?.nativeOverlayDiff ? "success" : "default"} variant="flat">
                 {overlay2Data.systemInfo?.nativeOverlayDiff ? "Yes" : "No"}
               </Chip>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">userxattr</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">userxattr</span>
               <Chip size="sm" color={overlay2Data.systemInfo?.userxattr ? "success" : "default"} variant="flat">
                 {overlay2Data.systemInfo?.userxattr ? "Enabled" : "Disabled"}
               </Chip>

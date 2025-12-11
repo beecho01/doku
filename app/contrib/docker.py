@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import logging
 
 import docker
 from docker.models.containers import Container
@@ -12,26 +14,41 @@ def docker_from_env() -> docker.DockerClient:
     """
     Create a Docker client with settings from environment.
     """
-    import os
+    logger = logging.getLogger(__name__)
 
-    # For Windows Docker Desktop, use named pipe
-    if os.name == 'nt':
+    try:
+        # Determine base_url dynamically
+        docker_host = os.getenv('DOCKER_HOST')
+
+        if docker_host:
+            # Use explicit DOCKER_HOST if set
+            base_url = docker_host
+        elif settings.IN_DOCKER:
+            # Running inside a Docker container
+            base_url = 'unix:///var/run/docker.sock'
+        elif os.name == 'nt':
+            # Windows development with Docker Desktop
+            base_url = 'npipe:////./pipe/docker_engine'
+        else:
+            # Default Linux/Unix
+            base_url = 'unix:///var/run/docker.sock'
+
+        # Create client with dynamic base_url
         client = docker.DockerClient(
-            base_url='npipe:////./pipe/docker_engine',
+            base_url=base_url,
             version=settings.DOCKER_VERSION,
             timeout=settings.DOCKER_TIMEOUT,
             max_pool_size=settings.DOCKER_MAX_POOL_SIZE,
             use_ssh_client=settings.DOCKER_USE_SSH_CLIENT,
         )
-    else:
-        client = docker.from_env(
-            version=settings.DOCKER_VERSION,
-            timeout=settings.DOCKER_TIMEOUT,
-            max_pool_size=settings.DOCKER_MAX_POOL_SIZE,
-            environment=settings.DOCKER_ENV,
-            use_ssh_client=settings.DOCKER_USE_SSH_CLIENT,
-        )
-    return client
+
+        # Test connection
+        client.ping()
+        logger.info(f"Docker client connected successfully to {base_url}")
+        return client
+    except Exception as e:
+        logger.error(f"Failed to create Docker client: {str(e)}")
+        raise
 
 
 def doku_container(client: docker.DockerClient) -> Container | None:

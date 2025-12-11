@@ -217,45 +217,55 @@ export default function Volumes() {
               <TableColumn key="mount_point" allowsSorting>Mount Point</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredVolumes.map((volume) => (
-                <TableRow key={volume.name}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium">{volume.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color="default">
-                      {volume.driver}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">{formatSize(volume.size)}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={getContainerStatusColor(volume.containers)}
-                      startContent={<Container className="w-3 h-3 m-1" />}
-                    >
-                      {volume.containers === 0 ? 'Unused' : `${volume.containers} container${volume.containers > 1 ? 's' : ''}`}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-sm">
-                      {formatDate(volume.created)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono max-w-xs truncate">
-                        {volume.mount_point}
-                      </code>
+              {filteredVolumes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-gray-500">No volumes to display</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredVolumes.map((volume) => (
+                  <TableRow key={volume.name}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium">{volume.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="sm" variant="flat" color="default">
+                        {volume.driver}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">{formatSize(volume.size)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={getContainerStatusColor(volume.containers)}
+                        startContent={<Container className="w-3 h-3 m-1" />}
+                      >
+                        {volume.containers === 0 ? 'Unused' : `${volume.containers} container${volume.containers > 1 ? 's' : ''}`}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm">
+                        {formatDate(volume.created)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono max-w-xs truncate">
+                          {volume.mount_point}
+                        </code>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardBody>

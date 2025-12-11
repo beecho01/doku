@@ -14,14 +14,13 @@ import {
   Input,
   Tabs,
   Tab,
-  Button,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   useDisclosure,
 } from "@heroui/react";
-import { Search, Container, Info } from "lucide-react";
+import { Search, Container } from "lucide-react";
 import { apiService } from "@/services/api";
 import type { ImageInfo, DockerSystemInfo } from "@/types";
 import { useState, useMemo } from "react";
@@ -36,7 +35,7 @@ export default function Images() {
     direction: "ascending" | "descending";
   }>({ column: "", direction: "ascending" });
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onClose } = useDisclosure();
 
   const { data, isLoading, error } = useQuery<ImageInfo[]>(
     "images",
@@ -45,13 +44,13 @@ export default function Images() {
   );
 
   // System info query
-  const { data: systemInfo, isLoading: systemLoading } = useQuery<DockerSystemInfo>(
+  const { data: systemInfo } = useQuery<DockerSystemInfo>(
     'systemInfo',
     apiService.getSystemInfo,
     { refetchInterval: 60000 }
   );
 
-    const filteredImages = useMemo(() => {
+  const filteredImages = useMemo(() => {
     if (!data) return [];
 
     let filtered = data.filter((image) =>
@@ -84,10 +83,6 @@ export default function Images() {
 
     return filtered;
   }, [data, searchQuery, activeFilter, sortDescriptor]);
-
-  const handleSystemInfo = () => {
-    onOpen();
-  };
 
   const formatSize = (bytes: number) => {
     const sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -162,65 +157,6 @@ export default function Images() {
         </div>
       </div>
 
-      {/* Summary Cards
-      <div className="grid grid-cols-4 xs:grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4">
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === "all" ? "ring-2 ring-blue-500 shadow-lg" : ""
-          }`}
-          isPressable
-          onPress={() => setActiveFilter("all")}
-        >
-          <CardBody className="p-2 bg-primary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total</p>
-            </div>
-            <p className="text-lg font-bold">{data.length}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === "in-use" ? "ring-2 ring-green-500 shadow-lg" : ""
-          }`}
-          isPressable
-          onPress={() => setActiveFilter("in-use")}
-        >
-          <CardBody className="p-2 bg-green-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">In Use</p>
-            </div>
-            <p className="text-lg font-bold">{activeImages}</p>
-          </CardBody>
-        </Card>
-
-        <Card
-          className={`aspect-square cursor-pointer transition-all hover:scale-105 ${
-            activeFilter === "unused" ? "ring-2 ring-red-500 shadow-lg" : ""
-          }`}
-          isPressable
-          onPress={() => setActiveFilter("unused")}
-        >
-          <CardBody className="p-2 bg-red-500/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">Unused</p>
-            </div>
-            <p className="text-lg font-bold">{unusedImages}</p>
-          </CardBody>
-        </Card>
-
-        <Card className="aspect-square">
-          <CardBody className="p-2 bg-secondary/20 flex flex-col items-center justify-center text-center h-full">
-            <div className="flex items-center gap-1 mb-2">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Virtual
-              </p>
-            </div>
-            <p className="text-sm font-bold">{formatSize(totalVirtualSize)}</p>
-          </CardBody>
-        </Card>
-      </div> */}
-
       <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
         <Tabs
           aria-label="Filter Options"
@@ -236,15 +172,6 @@ export default function Images() {
           <Tab key="unused" title={`Unused (${unusedImages})`}></Tab>
         </Tabs>
         <div className="flex md:justify-end md:flex-1 gap-2">
-          <Button
-            color="secondary"
-            variant="flat"
-            startContent={<Info className="w-4 h-4" />}
-            onPress={handleSystemInfo}
-            isLoading={systemLoading}
-          >
-            System Info
-          </Button>
           <Input
             placeholder="Search images..."
             value={searchQuery}
@@ -276,56 +203,66 @@ export default function Images() {
               <TableColumn key="containers" allowsSorting>Containers</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredImages.map((image) => (
-                <TableRow key={image.id}>
-                  <TableCell>
-                    <div className="font-medium">{image.repository}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color="primary">
-                      {image.tag}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                        {image.id.replace("sha256:", "").substring(0, 12)}
-                      </code>
+              {filteredImages.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-gray-500">No images to display</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center text-sm">
-                      {formatDate(image.created)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div className="font-medium">
-                        {formatSize(image.size)}
-                      </div>
-                      {image.virtual_size !== image.size && (
-                        <div className="text-xs text-gray-500">
-                          Virtual: {formatSize(image.virtual_size)}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={getContainerStatusColor(image.containers)}
-                      startContent={<Container className="w-3 h-3 m-1" />}
-                    >
-                      {image.containers === 0
-                        ? "Unused"
-                        : `${image.containers} container${
-                            image.containers > 1 ? "s" : ""
-                          }`}
-                    </Chip>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredImages.map((image) => (
+                  <TableRow key={image.id}>
+                    <TableCell>
+                      <div className="font-medium">{image.repository}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="sm" variant="flat" color="primary">
+                        {image.tag}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                          {image.id.replace("sha256:", "").substring(0, 12)}
+                        </code>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center text-sm">
+                        {formatDate(image.created)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {formatSize(image.size)}
+                        </div>
+                        {image.virtual_size !== image.size && (
+                          <div className="text-xs text-gray-500">
+                            Virtual: {formatSize(image.virtual_size)}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={getContainerStatusColor(image.containers)}
+                        startContent={<Container className="w-3 h-3 m-1" />}
+                      >
+                        {image.containers === 0
+                          ? "Unused"
+                          : `${image.containers} container${
+                              image.containers > 1 ? "s" : ""
+                            }`}
+                      </Chip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardBody>

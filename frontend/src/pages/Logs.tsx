@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "react-query";
 import {
   Card,
@@ -35,20 +35,28 @@ export default function Logs() {
   }>({ column: "", direction: "ascending" });
 
   // Container logs functionality
-  const [selectedContainer, setSelectedContainer] = useState<string | null>(null);
-  const [containerLogs, setContainerLogs] = useState<ContainerLogs | null>(null);
+  const [selectedContainer, setSelectedContainer] = useState<string | null>(
+    null
+  );
+  const [containerLogs, setContainerLogs] = useState<ContainerLogs | null>(
+    null
+  );
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [modalSize, setModalSize] = useState<"full" | "4xl">("4xl");
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useQuery<LogInfo[]>("logs", apiService.getLogs, {
-    refetchInterval: 30000,
-  });
+  const { data, isLoading, error } = useQuery<LogInfo[]>(
+    "logs",
+    apiService.getLogs,
+    {
+      refetchInterval: 30000,
+    }
+  );
 
-  const viewContainerLogs = async (containerId: string, containerName: string) => {
+  const viewContainerLogs = async (
+    containerId: string,
+    containerName: string
+  ) => {
     setSelectedContainer(containerName);
     setIsLoadingLogs(true);
     try {
@@ -56,7 +64,7 @@ export default function Logs() {
       setContainerLogs(logs);
       onOpen();
     } catch (error) {
-      console.error('Failed to fetch container logs:', error);
+      console.error("Failed to fetch container logs:", error);
     } finally {
       setIsLoadingLogs(false);
     }
@@ -73,11 +81,11 @@ export default function Logs() {
   };
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const filteredContainers = useMemo(() => {
@@ -150,6 +158,21 @@ export default function Logs() {
     );
   }, [data]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        // Below md breakpoint
+        setModalSize("full");
+      } else {
+        setModalSize("4xl");
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -190,7 +213,9 @@ export default function Logs() {
         <Tabs
           aria-label="Filter Options"
           selectedKey={activeFilter}
-          onSelectionChange={(key) => setActiveFilter(key as "all" | "running" | "stopped")}
+          onSelectionChange={(key) =>
+            setActiveFilter(key as "all" | "running" | "stopped")
+          }
           variant="solid"
           color="primary"
           radius="full"
@@ -209,7 +234,7 @@ export default function Logs() {
             className="w-full md:max-w-sm"
             variant="flat"
             isClearable
-            onClear={() => setSearchQuery('')}
+            onClear={() => setSearchQuery("")}
           />
         </div>
       </div>
@@ -224,10 +249,18 @@ export default function Logs() {
             onSortChange={(descriptor: any) => setSortDescriptor(descriptor)}
           >
             <TableHeader>
-              <TableColumn key="name" allowsSorting>Container Name</TableColumn>
-              <TableColumn key="image" allowsSorting>Image</TableColumn>
-              <TableColumn key="size" allowsSorting>Log Size</TableColumn>
-              <TableColumn key="created" allowsSorting>Last Scan</TableColumn>
+              <TableColumn key="name" allowsSorting>
+                Container Name
+              </TableColumn>
+              <TableColumn key="image" allowsSorting>
+                Image
+              </TableColumn>
+              <TableColumn key="size" allowsSorting>
+                Log Size
+              </TableColumn>
+              <TableColumn key="created" allowsSorting>
+                Last Scan
+              </TableColumn>
               <TableColumn>Actions</TableColumn>
             </TableHeader>
             <TableBody>
@@ -249,9 +282,7 @@ export default function Logs() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">
-                      {formatDate(log.created)}
-                    </div>
+                    <div className="text-sm">{formatDate(log.created)}</div>
                   </TableCell>
                   <TableCell>
                     <Button
@@ -259,8 +290,13 @@ export default function Logs() {
                       variant="flat"
                       color="primary"
                       startContent={<Eye className="w-3 h-3" />}
-                      onClick={() => viewContainerLogs(log.container_id, log.container_name)}
-                      isLoading={isLoadingLogs && selectedContainer === log.container_name}
+                      onClick={() =>
+                        viewContainerLogs(log.container_id, log.container_name)
+                      }
+                      isLoading={
+                        isLoadingLogs &&
+                        selectedContainer === log.container_name
+                      }
                     >
                       View Logs
                     </Button>
@@ -273,27 +309,45 @@ export default function Logs() {
       </Card>
 
       {/* Container Logs Modal */}
-      <Modal backdrop="blur" isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" placement="auto">
-        <ModalContent className="p-2">
-          <ModalHeader>
-            <div className="flex items-center gap-2">
+      <Modal
+        backdrop="blur"
+        isOpen={isOpen}
+        onClose={onClose}
+        size={modalSize}
+        scrollBehavior="outside"
+        placement="auto"
+      >
+        <ModalContent className="p-2 xs:m-0 sm:m-0 md:m-16">
+          <ModalHeader className="flex-col">
+            <div className="flex items-center gap-2 pb-5">
               <FileText className="w-5 h-5 text-blue-500" />
               <span>Container Logs - {selectedContainer}</span>
             </div>
-          </ModalHeader>
-          <ModalBody>
             {containerLogs ? (
-              <div className="space-y-4 mb-4">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                  <span>Lines requested: {containerLogs.lines_requested}</span>
-                  <span>Timestamp: {new Date(containerLogs.timestamp).toLocaleString()}</span>
-                </div>
-                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono whitespace-pre-wrap">
-                  {containerLogs.logs}
-                </pre>
+              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <span>Lines requested: {containerLogs.lines_requested}</span>
+                <span>
+                  Timestamp:{" "}
+                  {new Date(containerLogs.timestamp).toLocaleString()}
+                </span>
               </div>
+            ) : null}
+          </ModalHeader>
+          <ModalBody className="overflow-visible">
+            {containerLogs ? (
+              <pre
+                className="
+                  flex-1
+                  overflow-auto
+                  bg-gray-100 dark:bg-gray-800 p-4 rounded-lg
+                  font-mono text-sm whitespace-pre-wrap
+                "
+                aria-label="Container logs"
+              >
+                {containerLogs.logs}
+              </pre>
             ) : (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center flex-1">
                 <Spinner size="lg" />
               </div>
             )}

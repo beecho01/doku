@@ -170,8 +170,6 @@ export default function Cache() {
 
   if (!data) return null
 
-  if (!data) return null
-
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
@@ -232,45 +230,55 @@ export default function Cache() {
               <TableColumn key="last_used" allowsSorting>Last Used</TableColumn>
             </TableHeader>
             <TableBody>
-              {filteredCache.map((cache) => (
-                <TableRow key={cache.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
-                        {cache.id.substring(0, 12)}
-                      </code>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color={getTypeColor(cache.type)}>
-                      {cache.type}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">{formatSize(cache.size)}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={getUsageColor(cache.usage_count)}
-                      startContent={<Activity className="w-3 h-3 m-1" />}
-                    >
-                      {cache.usage_count}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-sm">
-                      {formatDate(cache.created)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(cache.last_used)}
+              {filteredCache.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-gray-500">No cache to display</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredCache.map((cache) => (
+                  <TableRow key={cache.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                        {cache.id.substring(0, 12)}
+                      </code>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="sm" variant="flat" color={getTypeColor(cache.type)}>
+                        {cache.type}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">{formatSize(cache.size)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={getUsageColor(cache.usage_count)}
+                        startContent={<Activity className="w-3 h-3 m-1" />}
+                      >
+                        {cache.usage_count}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm">
+                        {formatDate(cache.created)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {formatDate(cache.last_used)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardBody>
